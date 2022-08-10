@@ -1,0 +1,11 @@
+[submodule "lib/CMSIS_5"]
+	path = lib/CMSIS_5
+	url = ../../ARM-software/CMSIS_5
+	branch = master
+[submodule "lib/tinyusb"]
+	path = lib/tinyusb
+	url = ../../hathach/tinyusb_src.git
+[submodule "lib/nxp_driver"]
+	path = lib/nxp_driver
+	url = ../../kkitayam/nxp_driver.git
+	branch = removed_cmsis_core_headers
