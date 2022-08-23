@@ -35,24 +35,7 @@
 // MACRO CONSTANT TYPEDEF PROTYPES
 //--------------------------------------------------------------------+
 
-/* Blink pattern
- * - 250 ms  : device not mounted
- * - 1000 ms : device mounted
- * - 2500 ms : device is suspended
- */
-enum  {
-  BLINK_NOT_MOUNTED = 250,
-  BLINK_MOUNTED     = 1000,
-  BLINK_SUSPENDED   = 2500,
-
-  BLINK_ALWAYS_ON   = UINT32_MAX,
-  BLINK_ALWAYS_OFF  = 0
-};
-
-static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
-
 //------------- prototypes -------------//
-void led_blinking_task(void);
 void cdc_task(void);
 void dap_task(void);
 
@@ -71,7 +54,6 @@ int main(void)
     tud_task(); // tinyusb device task
     cdc_task();
     dap_task();
-    led_blinking_task();
   }
 
   return 0;
@@ -84,13 +66,11 @@ int main(void)
 // Invoked when device is mounted
 void tud_mount_cb(void)
 {
-  blink_interval_ms = BLINK_MOUNTED;
 }
 
 // Invoked when device is unmounted
 void tud_umount_cb(void)
 {
-  blink_interval_ms = BLINK_NOT_MOUNTED;
 }
 
 // Invoked when usb bus is suspended
@@ -99,13 +79,11 @@ void tud_umount_cb(void)
 void tud_suspend_cb(bool remote_wakeup_en)
 {
   (void) remote_wakeup_en;
-  blink_interval_ms = BLINK_SUSPENDED;
 }
 
 // Invoked when usb bus is resumed
 void tud_resume_cb(void)
 {
-  blink_interval_ms = BLINK_MOUNTED;
 }
 
 //--------------------------------------------------------------------+
@@ -188,57 +166,42 @@ void dap_task(void)
 //--------------------------------------------------------------------+
 void cdc_task(void)
 {
-  if ( ! tud_cdc_connected() ) return;
+  static uint8_t tx_buf[64];
+  static unsigned tx_length;
+  static unsigned tx_index;
+  static uint8_t rx_buf[64];
+  static unsigned rx_length;
+  static unsigned rx_index;
 
-  // connected and there are data available
-  if ( ! tud_cdc_available() ) return;
-
-  uint8_t buf[64];
-
-  uint32_t count = tud_cdc_read(buf, sizeof(buf));
-  for(uint32_t i=0; i < count; ++i)
-  {
-#if 0
-    tud_cdc_write_char(buf[i]);
-    if ( buf[i] == '\r' ) tud_cdc_write_char('\n');
-#else
-    ;
-#endif
+  if ( ! tud_cdc_connected() ) {
+    // clear FIFO
+    board_uart_read(rx_buf, sizeof(rx_buf));
+    tx_index = 0;
+    tx_length = 0;
+    rx_index = 0;
+    rx_length = 0;
+    return;
   }
-}
 
-// Invoked when cdc when line state changed e.g connected/disconnected
-void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
-{
-  (void) itf;
-
-  // connected
-  if ( dtr && rts )
-  {
-    // print initial message when connected
-    cdc_printf("clk %ld\n", SystemCoreClock);
+  if (rx_index == rx_length) {
+    rx_index = 0;
+    rx_length = board_uart_read(rx_buf, sizeof(rx_buf));
+  }
+  if (rx_index < rx_length) {
+    rx_index += tud_cdc_write(&rx_buf[rx_index], rx_length - rx_index);
     tud_cdc_write_flush();
   }
+
+  if ((tx_index == tx_length) && tud_cdc_available()) {
+    tx_index = 0;
+    tx_length = tud_cdc_read(tx_buf, sizeof(tx_buf));
+  }
+  if (tx_index < tx_length)
+    tx_index += board_uart_write(&tx_buf[tx_index], tx_length - tx_index);
+
 }
 
-// Invoked when CDC interface received data from host
-void tud_cdc_rx_cb(uint8_t itf)
+void tud_cdc_line_coding_cb(uint8_t itf, cdc_line_coding_t const* line_coding)
 {
-  (void) itf;
-}
-
-//--------------------------------------------------------------------+
-// BLINKING TASK
-//--------------------------------------------------------------------+
-void led_blinking_task(void)
-{
-  static uint32_t start_ms = 0;
-  static bool led_state = false;
-
-  // Blink every interval ms
-  if ( board_millis() - start_ms < blink_interval_ms) return; // not enough time
-  start_ms += blink_interval_ms;
-
-  board_led_write(led_state);
-  led_state = 1 - led_state; // toggle
+  board_uart_set_baudrate(line_coding->bit_rate);
 }

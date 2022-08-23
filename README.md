@@ -2,10 +2,6 @@
 
 A CMSIS-DAP V2 implementation for [AE-LPC11U35-MB](https://akizukidenshi.com/catalog/g/gK-12144/).
 
-# Note
-
-- USB serial is available, but for debugging, not for UART.
-
 # Alternatives
 
 - [DAPLink](https://github.com/ARMmbed/DAPLink)
@@ -43,6 +39,8 @@ $ make -C build -j
 | TDO          | 10  | P0_13  |
 | nRESET       | 23  | P0_2   |
 | Connected LED|  3  | P0_7   |
+| UART TX      | 18  | P0_19  |
+| UART RX      | 17  | P0_18  |
 
 # License
 
