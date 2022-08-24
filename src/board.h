@@ -51,6 +51,8 @@ void board_led_write(bool state);
 // a '1' means active (pressed), a '0' means inactive.
 uint32_t board_button_read(void);
 
+void board_uart_set_baudrate(unsigned bit_rate);
+
 // Get characters from UART
 int board_uart_read(uint8_t* buf, int len);
 

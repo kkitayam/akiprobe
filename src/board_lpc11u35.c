@@ -34,7 +34,7 @@ void USB_IRQHandler(void)
 //---------------------------------------------------------------- ----+
 // MACRO TYPEDEF CONSTANT ENUM
 //--------------------------------------------------------------------+
-#define LED_PORT              0
+//#define LED_PORT              0
 #define LED_PIN               7
 #define LED_STATE_ON          0
 
@@ -152,8 +152,10 @@ void board_init(void)
 
   Chip_GPIO_Init(LPC_GPIO);
 
+#ifdef LED_PORT
   // LED
   Chip_GPIO_SetPinDIROutput(LPC_GPIO, LED_PORT, LED_PIN);
+#endif
 
   // Button
   Chip_GPIO_SetPinDIRInput(LPC_GPIO, BUTTON_PORT, BUTTON_PIN);
@@ -173,12 +175,19 @@ void board_init(void)
 //--------------------------------------------------------------------+
 void board_led_write(bool state)
 {
+#ifdef LED_PORT
   Chip_GPIO_SetPinState(LPC_GPIO, LED_PORT, LED_PIN, state ? LED_STATE_ON : (1-LED_STATE_ON));
+#endif
 }
 
 uint32_t board_button_read(void)
 {
   return BUTTON_STATE_ACTIVE == Chip_GPIO_GetPinState(LPC_GPIO, BUTTON_PORT, BUTTON_PIN);
+}
+
+void board_uart_set_baudrate(unsigned bit_rate)
+{
+  Chip_UART_SetBaud(LPC_USART, bit_rate);
 }
 
 int board_uart_read(uint8_t* buf, int len)
