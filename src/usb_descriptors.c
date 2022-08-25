@@ -140,7 +140,7 @@ https://developers.google.com/web/fundamentals/native-hardware/build-for-webusb/
 (Section Microsoft OS compatibility descriptors)
 */
 
-#define BOS_TOTAL_LEN      (TUD_BOS_DESC_LEN + TUD_BOS_MICROSOFT_OS_DESC_LEN)
+#define BOS_TOTAL_LEN      (TUD_BOS_DESC_LEN + TUD_BOS_WEBUSB_DESC_LEN + TUD_BOS_MICROSOFT_OS_DESC_LEN)
 
 #define MS_OS_20_DESC_LEN  0xB2
 
@@ -148,7 +148,10 @@ https://developers.google.com/web/fundamentals/native-hardware/build-for-webusb/
 uint8_t const desc_bos[] =
 {
   // total length, number of device caps
-  TUD_BOS_DESCRIPTOR(BOS_TOTAL_LEN, 1),
+  TUD_BOS_DESCRIPTOR(BOS_TOTAL_LEN, 2),
+
+  // Vendor Code, iLandingPage
+  TUD_BOS_WEBUSB_DESCRIPTOR(VENDOR_REQUEST_WEBUSB, 1),
 
   // Microsoft OS 2.0 descriptor
   TUD_BOS_MS_OS_20_DESCRIPTOR(MS_OS_20_DESC_LEN, VENDOR_REQUEST_MICROSOFT)
