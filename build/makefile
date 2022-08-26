@@ -5,8 +5,15 @@ LD=$(TRIPLET)ld
 OBJCOPY=$(TRIPLET)objcopy
 GDB=$(TRIPLET)gdb
 SIZE=$(TRIPLET)size
+
+# Detect whether shell style is windows or not
+# https://stackoverflow.com/questions/714100/os-detecting-makefile/52062069#52062069
+ifeq '$(findstring ;,$(PATH))' ';'
 CP=copy
 RM=del
+else
+CP=cp
+endif
 
 vpath %.c ../src
 vpath %.c ../lib/CMSIS_5/CMSIS/DAP/Firmware/Source
