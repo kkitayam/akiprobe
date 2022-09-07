@@ -35,6 +35,8 @@
 // MACRO CONSTANT TYPEDEF PROTYPES
 //--------------------------------------------------------------------+
 
+//#define DEBUG
+
 //------------- prototypes -------------//
 void cdc_task(void);
 void dap_task(void);
@@ -166,6 +168,7 @@ void dap_task(void)
 //--------------------------------------------------------------------+
 void cdc_task(void)
 {
+#ifndef DEBUG
   static uint8_t tx_buf[64];
   static unsigned tx_length;
   static unsigned tx_index;
@@ -198,7 +201,12 @@ void cdc_task(void)
   }
   if (tx_index < tx_length)
     tx_index += board_uart_write(&tx_buf[tx_index], tx_length - tx_index);
-
+#else
+  if ( ! tud_cdc_connected() ) return;
+  if (tud_cdc_available()) {
+    tud_cdc_read_flush();
+  }
+#endif
 }
 
 void tud_cdc_line_coding_cb(uint8_t itf, cdc_line_coding_t const* line_coding)
