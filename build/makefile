@@ -16,6 +16,7 @@ CP=cp
 endif
 
 vpath %.c ../src
+vpath %.c ../src/ae_lpc11u35_mb
 vpath %.c ../lib/CMSIS_5/CMSIS/DAP/Firmware/Source
 vpath %.c ../lib/nxp_driver/lpcopen/lpc11uxx/lpc_chip_11uxx/src
 vpath %.c ../lib/nxp_driver/lpcopen/lpc11uxx/gcc
@@ -82,6 +83,7 @@ CPPFLAGS=\
  -DCFG_TUSB_MEM_SECTION='__attribute__((section(".data.$$RAM2")))'\
  -DCFG_TUSB_MEM_ALIGN='__attribute__((aligned(64)))' \
  -I../src\
+ -I../src/ae_lpc11u35_mb\
  -I../lib/CMSIS_5/CMSIS/Core/Include\
  -I../lib/CMSIS_5/CMSIS/DAP/Firmware/Include\
  -I../lib/nxp_driver/lpcopen/lpc11uxx/lpc_chip_11uxx/inc\
