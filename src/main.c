@@ -32,7 +32,7 @@
 #include "DAP.h"
 
 //--------------------------------------------------------------------+
-// MACRO CONSTANT TYPEDEF PROTYPES
+// MACRO CONSTANT TYPEDEF PROTOTYPE
 //--------------------------------------------------------------------+
 
 //#define DEBUG

@@ -49,7 +49,7 @@ OBJS=\
  sysinit_11xx.o\
  main.o\
  usb_descriptors.o\
- board_lpc11u35.o\
+ board.o\
  DAP.o\
  JTAG_DP.o\
  SW_DP.o\
@@ -135,7 +135,7 @@ LDLIBS=\
  -lnosys
 
 LDFLAGS=\
- -Wl,-T,../src/lpc11u35.ld\
+ -Wl,-T,../src/ae_lpc11u35_mb/lpc11u35.ld\
  -Wl,-Map=$(@:%.elf=%.map)\
  -Wl,-cref\
  -Wl,-gc-sections\
