@@ -29,7 +29,7 @@
 
 #include "vendor_device.h"
 
-#include "DAP_Config.h"
+#include "DAP_config.h"
 #include "DAP.h"
 
 //--------------------------------------------------------------------+
