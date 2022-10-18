@@ -32,7 +32,7 @@
 #include "DAP.h"
 
 //--------------------------------------------------------------------+
-// MACRO CONSTANT TYPEDEF PROTYPES
+// MACRO CONSTANT TYPEDEF PROTOTYPE
 //--------------------------------------------------------------------+
 
 //#define DEBUG
@@ -114,7 +114,7 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_requ
     case VENDOR_REQUEST_WEBUSB:
      // match vendor request in BOS descriptor
           // Get landing page url
-          return tud_control_xfer(rhport, request, (void*)&desc_url, desc_url.bLength);
+          return tud_control_xfer(rhport, request, (void*)(uintptr_t)&desc_url, desc_url.bLength);
 
     case VENDOR_REQUEST_MICROSOFT:
       if ( request->wIndex == 7 )
