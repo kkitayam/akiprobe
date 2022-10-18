@@ -96,6 +96,7 @@ CFLAGS=\
  -flto\
  -nostdlib\
  -ggdb\
+ -fstack-usage\
  -fdata-sections\
  -ffunction-sections\
  -fsingle-precision-constant\
@@ -139,6 +140,7 @@ LDFLAGS=\
  -Wl,-Map=$(@:%.elf=%.map)\
  -Wl,-cref\
  -Wl,-gc-sections\
+ -Wl,--print-memory-usage \
  -specs=nosys.specs\
  -specs=nano.specs
 
