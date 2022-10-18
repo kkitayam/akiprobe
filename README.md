@@ -58,7 +58,7 @@ $ make -C build -j
 ## Build
 
 ```console
-$ cmake -S . -B build_pico -G Ninja -D>CMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=MinSizeRel -DPICO_SDK_PATH=../pico-sdk
+$ cmake -S . -B build_pico -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=MinSizeRel -DPICO_SDK_PATH=../pico-sdk
 $ cmake --build build_pico
 ```
 
