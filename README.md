@@ -78,6 +78,6 @@ $ cmake --build build_pico
 
 # License
 
-- Procject's source code files are licensed under MIT license.
+- Project's source code files are licensed under MIT license.
 - [TinyUSB](https://github.com/hathach/tinyusb) is licensed under the MIT license.
 - [CMSIS](https://github.com/ARM-software/CMSIS_5) is licensed under the Apache 2.0 license.
