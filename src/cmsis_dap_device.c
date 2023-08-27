@@ -27,7 +27,7 @@
 #include "device/usbd.h"
 #include "device/usbd_pvt.h"
 
-#include "vendor_device.h"
+#include "cmsis_dap_device.h"
 
 #include "DAP_config.h"
 #include "DAP.h"

@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "vendor_device.h"
+#include "cmsis_dap_device.h"
 #include "board.h"
 #include "tusb.h"
 #include "usb_descriptors.h"

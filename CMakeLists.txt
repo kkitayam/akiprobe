@@ -69,7 +69,7 @@ add_executable(akiprobe
   ${CMAKE_CURRENT_SOURCE_DIR}/src/rp2040/board.c
   ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c
   ${CMAKE_CURRENT_SOURCE_DIR}/src/usb_descriptors.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/vendor_device.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/cmsis_dap_device.c
 
   ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS_5/CMSIS/DAP/Firmware/Source/DAP.c
   ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS_5/CMSIS/DAP/Firmware/Source/JTAG_DP.c

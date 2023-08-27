@@ -68,7 +68,7 @@ OBJS=\
  ncm_device.o\
  usbtmc_device.o\
  video_device.o\
- vendor_device.o
+ cmsis_dap_device.o
 
 TARGET_ARCH=\
  -mthumb\
