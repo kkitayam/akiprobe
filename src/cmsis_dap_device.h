@@ -20,83 +20,86 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. */
 
-#ifndef _TUSB_VENDOR_DEVICE_H_
-#define _TUSB_VENDOR_DEVICE_H_
+#ifndef _TUSB_CMSIS_DAP_DEVICE_H_
+#define _TUSB_CMSIS_DAP_DEVICE_H_
 
 #include "common/tusb_common.h"
+#include "device/usbd_pvt.h"
 
-#ifndef CFG_TUD_VENDOR_EPSIZE
-#define CFG_TUD_VENDOR_EPSIZE     64
+#ifndef CFG_TUD_CMSIS_DAP_EPSIZE
+#define CFG_TUD_CMSIS_DAP_EPSIZE     64
 #endif
 
 #ifdef __cplusplus
  extern "C" {
 #endif
 
+extern usbd_class_driver_t const cmsis_dap;
+
 //--------------------------------------------------------------------+
 // Application API (Multiple Interfaces)
 //--------------------------------------------------------------------+
-bool     tud_vendor_n_mounted         (uint8_t itf);
-uint32_t tud_vendor_n_acquire_request_buffer(uint8_t itf, const uint8_t **pbuf);
-void     tud_vendor_n_release_request_buffer(uint8_t itf);
-uint32_t tud_vendor_n_acquire_response_buffer(uint8_t itf, uint8_t **pbuf);
-void     tud_vendor_n_release_response_buffer(uint8_t itf, uint32_t bufsize);
+bool     tud_cmsis_dap_n_mounted         (uint8_t itf);
+uint32_t tud_cmsis_dap_n_acquire_request_buffer(uint8_t itf, const uint8_t **pbuf);
+void     tud_cmsis_dap_n_release_request_buffer(uint8_t itf);
+uint32_t tud_cmsis_dap_n_acquire_response_buffer(uint8_t itf, uint8_t **pbuf);
+void     tud_cmsis_dap_n_release_response_buffer(uint8_t itf, uint32_t bufsize);
    
 //--------------------------------------------------------------------+
 // Application API (Single Port)
 //--------------------------------------------------------------------+
-static inline bool     tud_vendor_mounted         (void);
-static inline uint32_t tud_vendor_acquire_request_buffer(const uint8_t **pbuf);
-static inline void     tud_vendor_release_request_buffer(void);
-static inline uint32_t tud_vendor_acquire_response_buffer(uint8_t **pbuf);
-static inline void     tud_vendor_release_response_buffer(uint32_t bufsize);
+static inline bool     tud_cmsis_dap_mounted         (void);
+static inline uint32_t tud_cmsis_dap_acquire_request_buffer(const uint8_t **pbuf);
+static inline void     tud_cmsis_dap_release_request_buffer(void);
+static inline uint32_t tud_cmsis_dap_acquire_response_buffer(uint8_t **pbuf);
+static inline void     tud_cmsis_dap_release_response_buffer(uint32_t bufsize);
 
 //--------------------------------------------------------------------+
 // Application Callback API (weak is optional)
 //--------------------------------------------------------------------+
 
 // Invoked when received new data
-TU_ATTR_WEAK void tud_vendor_transfer_abort_cb(uint8_t itf);
+TU_ATTR_WEAK void tud_cmsis_dap_transfer_abort_cb(uint8_t itf);
 
 //--------------------------------------------------------------------+
 // Inline Functions
 //--------------------------------------------------------------------+
 
-static inline bool tud_vendor_mounted (void)
+static inline bool tud_cmsis_dap_mounted (void)
 {
-  return tud_vendor_n_mounted(0);
+  return tud_cmsis_dap_n_mounted(0);
 }
    
-static inline uint32_t tud_vendor_acquire_request_buffer(const uint8_t **pbuf)
+static inline uint32_t tud_cmsis_dap_acquire_request_buffer(const uint8_t **pbuf)
 {
-  return tud_vendor_n_acquire_request_buffer(0, pbuf);
+  return tud_cmsis_dap_n_acquire_request_buffer(0, pbuf);
 }
 
-static inline void     tud_vendor_release_request_buffer(void)
+static inline void     tud_cmsis_dap_release_request_buffer(void)
 {
-  return tud_vendor_n_release_request_buffer(0);
+  return tud_cmsis_dap_n_release_request_buffer(0);
 }
 
-static inline uint32_t tud_vendor_acquire_response_buffer(uint8_t **pbuf)
+static inline uint32_t tud_cmsis_dap_acquire_response_buffer(uint8_t **pbuf)
 {
-  return tud_vendor_n_acquire_response_buffer(0, pbuf);
+  return tud_cmsis_dap_n_acquire_response_buffer(0, pbuf);
 }
 
-static inline void     tud_vendor_release_response_buffer(uint32_t bufsize)
+static inline void     tud_cmsis_dap_release_response_buffer(uint32_t bufsize)
 {
-  return tud_vendor_n_release_response_buffer(0, bufsize);
+  return tud_cmsis_dap_n_release_response_buffer(0, bufsize);
 }
 
 //--------------------------------------------------------------------+
 // Internal Class Driver API
 //--------------------------------------------------------------------+
-void     vendord_init(void);
-void     vendord_reset(uint8_t rhport);
-uint16_t vendord_open(uint8_t rhport, tusb_desc_interface_t const * itf_desc, uint16_t max_len);
-bool     vendord_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t event, uint32_t xferred_bytes);
+void     cmsis_dapd_init(void);
+void     cmsis_dapd_reset(uint8_t rhport);
+uint16_t cmsis_dapd_open(uint8_t rhport, tusb_desc_interface_t const * itf_desc, uint16_t max_len);
+bool     cmsis_dapd_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t event, uint32_t xferred_bytes);
 
 #ifdef __cplusplus
  }
 #endif
 
-#endif /* _TUSB_VENDOR_DEVICE_H_ */
+#endif /* _TUSB_CMSIS_DAP_DEVICE_H_ */

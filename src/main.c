@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "vendor_device.h"
+#include "cmsis_dap_device.h"
 #include "board.h"
 #include "tusb.h"
 #include "usb_descriptors.h"
@@ -38,12 +38,26 @@
 //#define DEBUG
 #define URL  "studio.keil.arm.com/auth/login/"
 
+bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const * request);
+
 const tusb_desc_webusb_url_t desc_url =
 {
   .bLength         = 3 + sizeof(URL) - 1,
   .bDescriptorType = 3, // WEBUSB URL type
   .bScheme         = 1, // 0: http, 1: https
   .url             = URL
+};
+
+usbd_class_driver_t const cmsis_dap = {
+#if CFG_TUSB_DEBUG >= 2
+  .name = "CMSIS-DAP",
+#endif
+  .init             = cmsis_dapd_init,
+  .reset            = cmsis_dapd_reset,
+  .open             = cmsis_dapd_open,
+  .control_xfer_cb  = tud_vendor_control_xfer_cb,
+  .xfer_cb          = cmsis_dapd_xfer_cb,
+  .sof              = NULL
 };
 
 //------------- prototypes -------------//
@@ -137,7 +151,7 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_requ
   return true;
 }
 
-void tud_vendor_transfer_abort_cb(uint8_t itf)
+void tud_cmsis_dap_transfer_abort_cb(uint8_t itf)
 {
   DAP_TransferAbort = 1;
 }
@@ -159,9 +173,9 @@ void dap_task(void)
 {
   const uint8_t *p_req;
   uint8_t *p_rsp;
-  unsigned sz_req = tud_vendor_acquire_request_buffer(&p_req);
+  unsigned sz_req = tud_cmsis_dap_acquire_request_buffer(&p_req);
   if (!sz_req) return;
-  unsigned sz_rsp = tud_vendor_acquire_response_buffer(&p_rsp);
+  unsigned sz_rsp = tud_cmsis_dap_acquire_response_buffer(&p_rsp);
   TU_ASSERT(sz_rsp,);
 
   uint32_t result = DAP_ExecuteCommand(p_req, p_rsp);
@@ -169,8 +183,8 @@ void dap_task(void)
   cdc_printf("%x %x -> %lx %x\n", p_req[0], sz_req, result, p_rsp[1]);
 #endif
 
-  tud_vendor_release_request_buffer();
-  tud_vendor_release_response_buffer(result & 0xFFFFU);
+  tud_cmsis_dap_release_request_buffer();
+  tud_cmsis_dap_release_response_buffer(result & 0xFFFFU);
 
 #ifdef DEBUG
   tud_cdc_write_flush();
@@ -227,3 +241,10 @@ void tud_cdc_line_coding_cb(uint8_t itf, cdc_line_coding_t const* line_coding)
 {
   board_uart_set_baudrate(line_coding->bit_rate);
 }
+
+usbd_class_driver_t const* usbd_app_driver_get_cb(uint8_t* driver_count)
+{
+  *driver_count = 1;
+  return &cmsis_dap;
+}
+

@@ -33,7 +33,7 @@ vpath %.c ../lib/tinyusb/src/class/midi
 vpath %.c ../lib/tinyusb/src/class/msc
 vpath %.c ../lib/tinyusb/src/class/net
 vpath %.c ../lib/tinyusb/src/class/usbtmc
-#vpath %.c ../lib/tinyusb/src/class/vendor
+vpath %.c ../lib/tinyusb/src/class/vendor
 vpath %.c ../lib/tinyusb/src/class/video
 vpath %.c ../lib/tinyusb/src/portable/nxp/lpc_ip3511
 
@@ -67,8 +67,9 @@ OBJS=\
  ecm_rndis_device.o\
  ncm_device.o\
  usbtmc_device.o\
+ vendor_device.o\
  video_device.o\
- vendor_device.o
+ cmsis_dap_device.o
 
 TARGET_ARCH=\
  -mthumb\

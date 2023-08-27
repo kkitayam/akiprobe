@@ -22,12 +22,12 @@
 
 #include "tusb_option.h"
 
-#if (CFG_TUD_ENABLED && CFG_TUD_VENDOR)
+#if (CFG_TUD_ENABLED && CFG_TUD_CMSIS_DAP)
 
 #include "device/usbd.h"
 #include "device/usbd_pvt.h"
 
-#include "vendor_device.h"
+#include "cmsis_dap_device.h"
 
 #include "DAP_config.h"
 #include "DAP.h"
@@ -50,24 +50,24 @@ typedef struct
   uint8_t epout_sz[DAP_PACKET_COUNT];
   uint8_t epin_sz[DAP_PACKET_COUNT];
   // Endpoint Transfer buffer
-  CFG_TUSB_MEM_ALIGN uint8_t epout_buf[DAP_PACKET_COUNT][CFG_TUD_VENDOR_EPSIZE];
-  CFG_TUSB_MEM_ALIGN uint8_t epin_buf[DAP_PACKET_COUNT][CFG_TUD_VENDOR_EPSIZE];
-} vendord_interface_t;
+  CFG_TUSB_MEM_ALIGN uint8_t epout_buf[DAP_PACKET_COUNT][CFG_TUD_CMSIS_DAP_EPSIZE];
+  CFG_TUSB_MEM_ALIGN uint8_t epin_buf[DAP_PACKET_COUNT][CFG_TUD_CMSIS_DAP_EPSIZE];
+} cmsis_dap_interface_t;
 
-CFG_TUSB_MEM_SECTION static vendord_interface_t _vendord_itf[CFG_TUD_VENDOR];
+CFG_TUSB_MEM_SECTION static cmsis_dap_interface_t _cmsis_dap_itf[CFG_TUD_CMSIS_DAP];
 
-#define ITF_MEM_RESET_SIZE   offsetof(vendord_interface_t, epout_sz)
+#define ITF_MEM_RESET_SIZE   offsetof(cmsis_dap_interface_t, epout_sz)
 
 
-bool tud_vendor_n_mounted (uint8_t itf)
+bool tud_cmsis_dap_n_mounted (uint8_t itf)
 {
-  return _vendord_itf[itf].ep_in && _vendord_itf[itf].ep_out;
+  return _cmsis_dap_itf[itf].ep_in && _cmsis_dap_itf[itf].ep_out;
 }
 
 //--------------------------------------------------------------------+
 // Read API
 //--------------------------------------------------------------------+
-static void _prep_out_transaction(vendord_interface_t* p_itf)
+static void _prep_out_transaction(cmsis_dap_interface_t* p_itf)
 {
   uint8_t const rhport = 0;
 
@@ -77,14 +77,14 @@ static void _prep_out_transaction(vendord_interface_t* p_itf)
   unsigned occupancy = p_itf->request_wp - p_itf->request_rp;
   if (occupancy < DAP_PACKET_COUNT) {
     unsigned idx = p_itf->request_wp % DAP_PACKET_COUNT;
-    usbd_edpt_xfer(rhport, p_itf->ep_out, p_itf->epout_buf[idx], CFG_TUD_VENDOR_EPSIZE);
+    usbd_edpt_xfer(rhport, p_itf->ep_out, p_itf->epout_buf[idx], CFG_TUD_CMSIS_DAP_EPSIZE);
   }
 }
 
-uint32_t tud_vendor_n_acquire_request_buffer(uint8_t itf, const uint8_t **pbuf)
+uint32_t tud_cmsis_dap_n_acquire_request_buffer(uint8_t itf, const uint8_t **pbuf)
 {
   TU_ASSERT(pbuf, 0);
-  vendord_interface_t* p_itf = &_vendord_itf[itf];
+  cmsis_dap_interface_t* p_itf = &_cmsis_dap_itf[itf];
 
   uint8_t rp = p_itf->request_rp;
   uint8_t wp = p_itf->request_wp;
@@ -119,9 +119,9 @@ uint32_t tud_vendor_n_acquire_request_buffer(uint8_t itf, const uint8_t **pbuf)
   return p_itf->epout_sz[idx];
 }
 
-void tud_vendor_n_release_request_buffer(uint8_t itf)
+void tud_cmsis_dap_n_release_request_buffer(uint8_t itf)
 {
-  vendord_interface_t* p_itf = &_vendord_itf[itf];
+  cmsis_dap_interface_t* p_itf = &_cmsis_dap_itf[itf];
   ++p_itf->request_rp;
   _prep_out_transaction(p_itf);
 }
@@ -129,7 +129,7 @@ void tud_vendor_n_release_request_buffer(uint8_t itf)
 //--------------------------------------------------------------------+
 // Write API
 //--------------------------------------------------------------------+
-static void maybe_transmit(vendord_interface_t* p_itf)
+static void maybe_transmit(cmsis_dap_interface_t* p_itf)
 {
   uint8_t const rhport = 0;
 
@@ -143,10 +143,10 @@ static void maybe_transmit(vendord_interface_t* p_itf)
   }
 }
 
-uint32_t tud_vendor_n_acquire_response_buffer(uint8_t itf, uint8_t **pbuf)
+uint32_t tud_cmsis_dap_n_acquire_response_buffer(uint8_t itf, uint8_t **pbuf)
 {
   TU_ASSERT(pbuf, 0);
-  vendord_interface_t* p_itf = &_vendord_itf[itf];
+  cmsis_dap_interface_t* p_itf = &_cmsis_dap_itf[itf];
 
   unsigned occupancy = p_itf->response_wp - p_itf->response_rp;
   if (occupancy < DAP_PACKET_COUNT) {
@@ -157,9 +157,9 @@ uint32_t tud_vendor_n_acquire_response_buffer(uint8_t itf, uint8_t **pbuf)
   return 0;
 }
 
-void tud_vendor_n_release_response_buffer(uint8_t itf, uint32_t bufsize)
+void tud_cmsis_dap_n_release_response_buffer(uint8_t itf, uint32_t bufsize)
 {
-  vendord_interface_t* p_itf = &_vendord_itf[itf];
+  cmsis_dap_interface_t* p_itf = &_cmsis_dap_itf[itf];
   unsigned idx = p_itf->response_wp % DAP_PACKET_COUNT;
   p_itf->epin_sz[idx] = bufsize;
   ++p_itf->response_wp;
@@ -169,24 +169,24 @@ void tud_vendor_n_release_response_buffer(uint8_t itf, uint32_t bufsize)
 //--------------------------------------------------------------------+
 // USBD Driver API
 //--------------------------------------------------------------------+
-void vendord_init(void)
+void cmsis_dapd_init(void)
 {
-  tu_memclr(_vendord_itf, sizeof(_vendord_itf));
+  tu_memclr(_cmsis_dap_itf, sizeof(_cmsis_dap_itf));
 }
 
-void vendord_reset(uint8_t rhport)
+void cmsis_dapd_reset(uint8_t rhport)
 {
   (void) rhport;
 
-  for(uint8_t i=0; i<CFG_TUD_VENDOR; i++)
+  for(uint8_t i=0; i<CFG_TUD_CMSIS_DAP; i++)
   {
-    vendord_interface_t* p_itf = &_vendord_itf[i];
+    cmsis_dap_interface_t* p_itf = &_cmsis_dap_itf[i];
 
     tu_memclr(p_itf, ITF_MEM_RESET_SIZE);
   }
 }
 
-uint16_t vendord_open(uint8_t rhport, tusb_desc_interface_t const * desc_itf, uint16_t max_len)
+uint16_t cmsis_dapd_open(uint8_t rhport, tusb_desc_interface_t const * desc_itf, uint16_t max_len)
 {
   TU_VERIFY(TUSB_CLASS_VENDOR_SPECIFIC == desc_itf->bInterfaceClass, 0);
 
@@ -194,18 +194,18 @@ uint16_t vendord_open(uint8_t rhport, tusb_desc_interface_t const * desc_itf, ui
   uint8_t const * desc_end = p_desc + max_len;
 
   // Find available interface
-  vendord_interface_t* p_vendor = NULL;
-  for(uint8_t i=0; i<CFG_TUD_VENDOR; i++)
+  cmsis_dap_interface_t* p_cmsis_dap = NULL;
+  for(uint8_t i=0; i<CFG_TUD_CMSIS_DAP; i++)
   {
-    if ( _vendord_itf[i].ep_in == 0 && _vendord_itf[i].ep_out == 0 )
+    if ( _cmsis_dap_itf[i].ep_in == 0 && _cmsis_dap_itf[i].ep_out == 0 )
     {
-      p_vendor = &_vendord_itf[i];
+      p_cmsis_dap = &_cmsis_dap_itf[i];
       break;
     }
   }
-  TU_VERIFY(p_vendor, 0);
+  TU_VERIFY(p_cmsis_dap, 0);
 
-  p_vendor->itf_num = desc_itf->bInterfaceNumber;
+  p_cmsis_dap->itf_num = desc_itf->bInterfaceNumber;
   if (desc_itf->bNumEndpoints)
   {
     // skip non-endpoint descriptors
@@ -215,33 +215,33 @@ uint16_t vendord_open(uint8_t rhport, tusb_desc_interface_t const * desc_itf, ui
     }
 
     // Open endpoint pair with usbd helper
-    TU_ASSERT(usbd_open_edpt_pair(rhport, p_desc, desc_itf->bNumEndpoints, TUSB_XFER_BULK, &p_vendor->ep_out, &p_vendor->ep_in), 0);
+    TU_ASSERT(usbd_open_edpt_pair(rhport, p_desc, desc_itf->bNumEndpoints, TUSB_XFER_BULK, &p_cmsis_dap->ep_out, &p_cmsis_dap->ep_in), 0);
 
     p_desc += desc_itf->bNumEndpoints*sizeof(tusb_desc_endpoint_t);
 
     // Prepare for incoming data
-    if ( p_vendor->ep_out )
+    if ( p_cmsis_dap->ep_out )
     {
-      TU_ASSERT(usbd_edpt_xfer(rhport, p_vendor->ep_out, p_vendor->epout_buf[0], sizeof(p_vendor->epout_buf)), 0);
+      TU_ASSERT(usbd_edpt_xfer(rhport, p_cmsis_dap->ep_out, p_cmsis_dap->epout_buf[0], sizeof(p_cmsis_dap->epout_buf)), 0);
     }
 
-    if ( p_vendor->ep_in ) maybe_transmit(p_vendor);
+    if ( p_cmsis_dap->ep_in ) maybe_transmit(p_cmsis_dap);
   }
 
   return (uint16_t) ((uintptr_t) p_desc - (uintptr_t) desc_itf);
 }
 
-bool vendord_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t result, uint32_t xferred_bytes)
+bool cmsis_dapd_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t result, uint32_t xferred_bytes)
 {
   (void) rhport;
   (void) result;
 
   uint8_t itf = 0;
-  vendord_interface_t* p_itf = _vendord_itf;
+  cmsis_dap_interface_t* p_itf = _cmsis_dap_itf;
 
   for ( ; ; itf++, p_itf++)
   {
-    if (itf >= TU_ARRAY_SIZE(_vendord_itf)) return false;
+    if (itf >= TU_ARRAY_SIZE(_cmsis_dap_itf)) return false;
 
     if ( ( ep_addr == p_itf->ep_out ) || ( ep_addr == p_itf->ep_in ) ) break;
   }
@@ -252,7 +252,7 @@ bool vendord_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t result, uint
       unsigned idx = p_itf->request_wp % DAP_PACKET_COUNT;
       p_itf->epout_sz[idx] = xferred_bytes;
       if (ID_DAP_TransferAbort == p_itf->epout_buf[idx][0]) {
-        if (tud_vendor_transfer_abort_cb) tud_vendor_transfer_abort_cb(itf);
+        if (tud_cmsis_dap_transfer_abort_cb) tud_cmsis_dap_transfer_abort_cb(itf);
       } else {
         ++p_itf->request_wp;
       }
