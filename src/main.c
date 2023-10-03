@@ -31,6 +31,10 @@
 #include "DAP_config.h"
 #include "DAP.h"
 
+#ifdef _CMSIS_RP2040_H_
+#include "pico/multicore.h"
+#endif
+
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF PROTOTYPE
 //--------------------------------------------------------------------+
@@ -59,12 +63,30 @@ usbd_class_driver_t const cmsis_dap = {
   .xfer_cb          = cmsis_dapd_xfer_cb,
   .sof              = NULL
 };
-
 //------------- prototypes -------------//
 void cdc_task(void);
 void dap_task(void);
 
 /*------------- MAIN -------------*/
+#ifdef _CMSIS_RP2040_H_
+static volatile unsigned g_stage0;  /* Request to CPU1 */
+static volatile unsigned g_stage1;  /* Response to CPU0 */
+static volatile unsigned g_stage2;  /* Return packet to HOST */
+static unsigned g_result;
+static const uint8_t *g_req;
+static uint8_t *g_rsp;
+
+void core1_entry()
+{
+  while (1) {
+    if (g_stage0 != g_stage1) {
+      g_result = DAP_ExecuteCommand(g_req, g_rsp);
+      ++g_stage1;
+    }
+  }
+}
+#endif
+
 int main(void)
 {
   board_init();
@@ -74,8 +96,11 @@ int main(void)
 
   DAP_Setup();
 
-  while (1)
-  {
+#ifdef _CMSIS_RP2040_H_
+  multicore_launch_core1(core1_entry);
+#endif
+
+  while (1) {
     tud_task(); // tinyusb device task
     cdc_task();
     dap_task();
@@ -171,20 +196,41 @@ void cdc_printf(const char* str, ...)
 
 void dap_task(void)
 {
-  const uint8_t *p_req;
-  uint8_t *p_rsp;
-  unsigned sz_req = tud_cmsis_dap_acquire_request_buffer(&p_req);
-  if (!sz_req) return;
-  unsigned sz_rsp = tud_cmsis_dap_acquire_response_buffer(&p_rsp);
-  TU_ASSERT(sz_rsp,);
-
-  uint32_t result = DAP_ExecuteCommand(p_req, p_rsp);
-#ifdef DEBUG
-  cdc_printf("%x %x -> %lx %x\n", p_req[0], sz_req, result, p_rsp[1]);
+#ifdef _CMSIS_RP2040_H_
+  if (g_stage0 == g_stage2) {
 #endif
 
+    const uint8_t *p_req;
+    uint8_t *p_rsp;
+    unsigned sz_req = tud_cmsis_dap_acquire_request_buffer(&p_req);
+    if (!sz_req) return;
+    unsigned sz_rsp = tud_cmsis_dap_acquire_response_buffer(&p_rsp);
+    TU_ASSERT(sz_rsp,);
+
+#ifdef _CMSIS_RP2040_H_
+    g_rsp = p_rsp;
+    g_req = p_req;
+    ++g_stage0;
+#else
+    uint32_t result = DAP_ExecuteCommand(p_req, p_rsp);
+#endif
+
+#ifdef DEBUG
+    cdc_printf("%x %x -> %lx %x\n", p_req[0], sz_req, result, p_rsp[1]);
+#endif
+  }
+
+#ifdef _CMSIS_RP2040_H_
+  if ((g_stage0 == g_stage2) || (g_stage0 != g_stage1)) {
+    return;
+  }
+  uint32_t result = g_result;
+#endif
   tud_cmsis_dap_release_request_buffer();
   tud_cmsis_dap_release_response_buffer(result & 0xFFFFU);
+#ifdef _CMSIS_RP2040_H_
+  ++g_stage2;
+#endif
 
 #ifdef DEBUG
   tud_cdc_write_flush();

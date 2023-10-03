@@ -42,6 +42,8 @@ target_link_libraries(akiprobe PRIVATE
   pico_stdlib
   pico_unique_id
   tinyusb_device
-  pico_bootsel_via_double_reset)
+  pico_bootsel_via_double_reset
+  pico_multicore
+)
 
 pico_add_extra_outputs(akiprobe)
