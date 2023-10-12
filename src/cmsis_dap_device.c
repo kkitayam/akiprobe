@@ -47,11 +47,11 @@ typedef struct
   uint8_t response_wp;
   uint8_t response_rp;
 
-  uint8_t epout_sz[DAP_PACKET_COUNT];
-  uint8_t epin_sz[DAP_PACKET_COUNT];
+  uint16_t epout_sz[DAP_PACKET_COUNT];
+  uint16_t epin_sz[DAP_PACKET_COUNT];
   // Endpoint Transfer buffer
-  CFG_TUSB_MEM_ALIGN uint8_t epout_buf[DAP_PACKET_COUNT][CFG_TUD_CMSIS_DAP_EPSIZE];
-  CFG_TUSB_MEM_ALIGN uint8_t epin_buf[DAP_PACKET_COUNT][CFG_TUD_CMSIS_DAP_EPSIZE];
+  CFG_TUSB_MEM_ALIGN uint8_t epout_buf[DAP_PACKET_COUNT][DAP_PACKET_SIZE];
+  CFG_TUSB_MEM_ALIGN uint8_t epin_buf[DAP_PACKET_COUNT][DAP_PACKET_SIZE];
 } cmsis_dap_interface_t;
 
 CFG_TUSB_MEM_SECTION static cmsis_dap_interface_t _cmsis_dap_itf[CFG_TUD_CMSIS_DAP];
@@ -77,7 +77,7 @@ static void _prep_out_transaction(cmsis_dap_interface_t* p_itf)
   unsigned occupancy = p_itf->request_wp - p_itf->request_rp;
   if (occupancy < DAP_PACKET_COUNT) {
     unsigned idx = p_itf->request_wp % DAP_PACKET_COUNT;
-    usbd_edpt_xfer(rhport, p_itf->ep_out, p_itf->epout_buf[idx], CFG_TUD_CMSIS_DAP_EPSIZE);
+    usbd_edpt_xfer(rhport, p_itf->ep_out, p_itf->epout_buf[idx], DAP_PACKET_SIZE);
   }
 }
 
