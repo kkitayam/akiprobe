@@ -26,10 +26,6 @@
 #include "common/tusb_common.h"
 #include "device/usbd_pvt.h"
 
-#ifndef CFG_TUD_CMSIS_DAP_EPSIZE
-#define CFG_TUD_CMSIS_DAP_EPSIZE     64
-#endif
-
 #ifdef __cplusplus
  extern "C" {
 #endif
