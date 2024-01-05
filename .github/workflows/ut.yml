@@ -4,7 +4,8 @@ on:
   workflow_dispatch:
   push:
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
     paths:
       - 'src/**'
       - 'tests/**'
