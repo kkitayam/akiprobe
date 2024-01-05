@@ -1,0 +1,26 @@
+name: Unit test
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - '.github/workflows/ut.yml'
+jobs:
+  class:
+    runs-on: "ubuntu-22.04"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install gMock and Ninja
+        run: sudo apt-get install -y libgmock-dev ninja-build
+
+      - name: Run tests
+        run: |
+          cmake -G Ninja -S tests -B build-tests
+          ctest --test-dir build-tests
