@@ -1,15 +1,25 @@
 cmake_minimum_required(VERSION 3.12)
 
 if (NOT PICO_SDK_PATH)
-  set(PICO_SDK_PATH "${CMAKE_CURRENT_LIST_DIR}/lib/pico-sdk")
+  set(PICO_SDK_FETCH_FROM_GIT on)
 endif ()
-set(PICO_BOARD pico)
-set(PICO_COPY_TO_RAM 1)
-#set(PICO_TINYUSB_PATH "${CMAKE_CURRENT_LIST_DIR}/lib/tinyusb")
 
-include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/pico_sdk_import.cmake)
+
+find_package(Git QUIET)
+if (GIT_FOUND)
+  execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init lib/tinyusb
+    WORKING_DIRECTORY ${PICO_SDK_PATH}
+    RESULT_VARIABLE GIT_SUBMOD_RESULT)
+  if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+    message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+  endif()
+endif()
 
 project(akiprobe)
+
+set(PICO_BOARD pico)
+set(PICO_COPY_TO_RAM 1)
 
 pico_sdk_init()
 
