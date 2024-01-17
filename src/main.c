@@ -48,6 +48,12 @@ const tusb_desc_webusb_url_t desc_url =
   .url             = URL
 };
 
+/**
+ * @brief CMSIS-DAP class driver.
+ * 
+ * This structure represents the CMSIS-DAP class driver.
+ * It is used to define the behavior and functionality of the CMSIS-DAP device.
+ */
 usbd_class_driver_t const cmsis_dap = {
 #if CFG_TUSB_DEBUG >= 2
   .name = "CMSIS-DAP",
