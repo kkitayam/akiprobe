@@ -31,14 +31,57 @@
 #endif
 
 extern usbd_class_driver_t const cmsis_dap;
-
+  
 //--------------------------------------------------------------------+
 // Application API (Multiple Interfaces)
 //--------------------------------------------------------------------+
+/**
+ * @brief Check if the CMSIS-DAP interface is mounted.
+ *
+ * This function checks whether the CMSIS-DAP interface specified by the given interface number is mounted or not.
+ *
+ * @param itf The interface number of the CMSIS-DAP interface.
+ * @return true if the CMSIS-DAP interface is mounted, false otherwise.
+ */
 bool     tud_cmsis_dap_n_mounted         (uint8_t itf);
+/**
+ * @brief Acquires the request buffer for the specified CMSIS-DAP interface.
+ *
+ * This function is used to acquire the request buffer for the specified CMSIS-DAP interface.
+ *
+ * @param itf The interface number.
+ * @param pbuf Pointer to a pointer that will be updated with the address of the request buffer.
+ *
+ * @return The size of the acquired request buffer in bytes.
+ */
 uint32_t tud_cmsis_dap_n_acquire_request_buffer(uint8_t itf, const uint8_t **pbuf);
+/**
+ * @brief Releases the request buffer for the CMSIS-DAP interface.
+ *
+ * This function releases the request buffer for the specified CMSIS-DAP interface.
+ *
+ * @param itf The interface number.
+ */
 void     tud_cmsis_dap_n_release_request_buffer(uint8_t itf);
+/**
+ * @brief Acquires the response buffer for the specified interface.
+ *
+ * This function is used to acquire the response buffer for the specified interface in the CMSIS-DAP device.
+ *
+ * @param itf The interface number.
+ * @param pbuf Pointer to a pointer that will be updated with the address of the response buffer.
+ *
+ * @return The size of the acquired response buffer in bytes.
+ */
 uint32_t tud_cmsis_dap_n_acquire_response_buffer(uint8_t itf, uint8_t **pbuf);
+/**
+ * @brief Releases the response buffer for the specified CMSIS-DAP interface.
+ *
+ * This function releases the response buffer used for communication with the CMSIS-DAP interface.
+ *
+ * @param itf The interface number.
+ * @param bufsize The size of the buffer to be released.
+ */
 void     tud_cmsis_dap_n_release_response_buffer(uint8_t itf, uint32_t bufsize);
    
 //--------------------------------------------------------------------+
