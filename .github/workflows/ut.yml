@@ -17,11 +17,13 @@ jobs:
         with:
           submodules: true
 
-      - name: Install gMock and Ninja
-        run: sudo apt-get install -y libgmock-dev ninja-build
+      - name: Setup
+        run: sudo apt-get install -y libgmock-dev ninja-build lcov
 
       - name: Run tests
         run: |
-          cmake -G Ninja -S tests -B build-tests
-          cmake --build build-tests
+          ctest --build-and-test tests build-tests --build-generator Ninja
           ctest --test-dir build-tests
+          lcov -o tmp.info -c -d build-tests
+          lcov -o cov.info -r tmp.info '/usr/*' '*/lib/tinyusb/*' '*/tests/*'
+          lcov -l cov.info
