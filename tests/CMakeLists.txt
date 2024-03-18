@@ -18,6 +18,10 @@ add_executable(class_driver_api_tests
   mock_tinyusb.cpp
 )
 
+target_compile_options(class_driver_api_tests PRIVATE
+  -fprofile-arcs
+  -ftest-coverage
+)
 target_compile_definitions(class_driver_api_tests PRIVATE
   CFG_TUSB_MCU=OPT_MCU_NONE
   CFG_DCD_ENDPOINT_MAX=8
@@ -33,5 +37,6 @@ target_include_directories(class_driver_api_tests PRIVATE
 
 target_link_libraries(class_driver_api_tests
   GTest::gmock_main
+  gcov
 )
 gtest_discover_tests(class_driver_api_tests)
