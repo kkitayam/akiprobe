@@ -29,17 +29,17 @@ add_executable(akiprobe
   ${CMAKE_CURRENT_SOURCE_DIR}/src/usb_descriptors.c
   ${CMAKE_CURRENT_SOURCE_DIR}/src/cmsis_dap_device.c
 
-  ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS_5/CMSIS/DAP/Firmware/Source/DAP.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS_5/CMSIS/DAP/Firmware/Source/JTAG_DP.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS_5/CMSIS/DAP/Firmware/Source/DAP_vendor.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS_5/CMSIS/DAP/Firmware/Source/SWO.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS_5/CMSIS/DAP/Firmware/Source/SW_DP.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS-DAP/Firmware/Source/DAP.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS-DAP/Firmware/Source/JTAG_DP.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS-DAP/Firmware/Source/DAP_vendor.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS-DAP/Firmware/Source/SWO.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS-DAP/Firmware/Source/SW_DP.c
 )
 
 target_include_directories(akiprobe PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}/src/rp2040
-  ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS_5/CMSIS/DAP/Firmware/Include/
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS-DAP/Firmware/Include/
 )
 
 target_compile_definitions(akiprobe PRIVATE

@@ -1,7 +1,3 @@
-[submodule "lib/CMSIS_5"]
-	path = lib/CMSIS_5
-	url = ../../ARM-software/CMSIS_5
-	branch = master
 [submodule "lib/tinyusb"]
 	path = lib/tinyusb
 	url = ../../hathach/tinyusb_src.git
@@ -9,3 +5,13 @@
 	path = lib/nxp_driver
 	url = ../../kkitayam/nxp_driver.git
 	branch = removed_cmsis_core_headers
+[submodule "lib/CMSIS-DAP"]
+	path = lib/CMSIS-DAP
+	url = https://github.com/ARM-software/CMSIS-DAP.git
+	branch = main
+	shallow = true
+[submodule "lib/CMSIS_6"]
+	path = lib/CMSIS_6
+	url = https://github.com/ARM-software/CMSIS_6.git
+	branch = main
+	shallow = true
