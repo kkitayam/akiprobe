@@ -12,22 +12,21 @@ A CMSIS-DAP V2 implementation for
 # Depends
 
 - [TinyUSB](https://github.com/hathach/tinyusb)
-- [CMSIS](https://github.com/ARM-software/CMSIS_5)
+- [CMSIS_6](https://github.com/ARM-software/CMSIS_6)
+- [CMSIS-DAP](https://github.com/ARM-software/CMSIS-DAP)
 
 # for [AE-LPC11U35-MB](https://akizukidenshi.com/catalog/g/gK-12144/)
 
 ## Requirements
 
-- [GNU Arm Embedded Toolchain](https://developer.arm.com/downloads/-/gnu-rm)
+- [Arm GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)
 - [GNU make](https://www.gnu.org/software/make/)
 - [lpc_chekcusm](https://pypi.org/project/lpc-checksum/)
 
 ## Build
 
 ```console
-$ git submodule update --init lib/CMSIS_5
-$ git submodule update --init lib/tinyusb
-$ git submodule update --init lib/nxp_driver
+$ git submodule update --init
 $ make -C build -j
 ```
 
@@ -51,7 +50,7 @@ $ make -C build -j
 ## Requirements
 
 - [pico-sdk](https://github.com/raspberrypi/pico-sdk)
-- [GNU Arm Embedded Toolchain](https://developer.arm.com/downloads/-/gnu-rm)
+- [Arm GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)
 - [cmake](https://cmake.org/)
 - [ninja](https://ninja-build.org/)
 
@@ -80,4 +79,5 @@ $ cmake --build build_pico
 
 - Project's source code files are licensed under MIT license.
 - [TinyUSB](https://github.com/hathach/tinyusb) is licensed under the MIT license.
-- [CMSIS](https://github.com/ARM-software/CMSIS_5) is licensed under the Apache 2.0 license.
+- [CMSIS_6](https://github.com/ARM-software/CMSIS_6) is licensed under the Apache 2.0 license.
+- [CMSIS-DAP](https://github.com/ARM-software/CMSIS-DAP) is licensed under the Apache 2.0 license.
