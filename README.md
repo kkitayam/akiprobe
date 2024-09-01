@@ -2,7 +2,7 @@
 
 A CMSIS-DAP V2 implementation for
 [AE-LPC11U35-MB](https://akizukidenshi.com/catalog/g/gK-12144/) and
-[Raspberry Pi Pico](https://www.raspberrypi.com/products/raspberry-pi-pico/).
+[Raspberry Pi Pico(rp2040)](https://www.raspberrypi.com/products/raspberry-pi-pico/).
 
 # Alternatives
 
@@ -57,7 +57,7 @@ $ make -C build -j
 ## Build
 
 ```console
-$ cmake -S . -B build_pico -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=MinSizeRel -DPICO_SDK_PATH=../pico-sdk
+$ cmake -S . -B build_pico -G Ninja -DPICO_PLATFORM=rp2040 -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=MinSizeRel -DPICO_SDK_PATH=../pico-sdk
 $ cmake --build build_pico
 ```
 
