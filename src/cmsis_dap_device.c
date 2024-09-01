@@ -67,6 +67,13 @@ bool tud_cmsis_dap_n_mounted (uint8_t itf)
 //--------------------------------------------------------------------+
 // Read API
 //--------------------------------------------------------------------+
+/**
+ * @brief Prepares an OUT transaction for the CMSIS-DAP interface.
+ *
+ * This function is responsible for preparing an OUT transaction for the CMSIS-DAP interface.
+ *
+ * @param p_itf Pointer to the CMSIS-DAP interface structure.
+ */
 static void _prep_out_transaction(cmsis_dap_interface_t* p_itf)
 {
   uint8_t const rhport = 0;
@@ -129,6 +136,13 @@ void tud_cmsis_dap_n_release_request_buffer(uint8_t itf)
 //--------------------------------------------------------------------+
 // Write API
 //--------------------------------------------------------------------+
+/**
+ * @brief Prepares an IN transaction for the CMSIS-DAP interface.
+ *
+ * This function is responsible for preparing an IN transaction for the CMSIS-DAP interface.
+ *
+ * @param p_itf Pointer to the CMSIS-DAP interface structure.
+ */
 static void maybe_transmit(cmsis_dap_interface_t* p_itf)
 {
   uint8_t const rhport = 0;
