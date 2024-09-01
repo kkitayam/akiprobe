@@ -40,25 +40,40 @@ typedef struct
   uint8_t itf_num;
   uint8_t ep_in;
   uint8_t ep_out;
+  uint8_t ep_swo;
+
+  volatile uint8_t request_wp;
+  volatile uint8_t request_rp;
+  volatile uint8_t response_wp;
+  volatile uint8_t response_rp;
 
   /*------------- From this point, data is not cleared by bus reset -------------*/
-  uint8_t request_wp;
-  uint8_t request_rp;
-  uint8_t response_wp;
-  uint8_t response_rp;
-
   uint16_t epout_sz[DAP_PACKET_COUNT];
   uint16_t epin_sz[DAP_PACKET_COUNT];
   // Endpoint Transfer buffer
   CFG_TUSB_MEM_ALIGN uint8_t epout_buf[DAP_PACKET_COUNT][DAP_PACKET_SIZE];
   CFG_TUSB_MEM_ALIGN uint8_t epin_buf[DAP_PACKET_COUNT][DAP_PACKET_SIZE];
+  CFG_TUSB_MEM_ALIGN uint8_t epswo_buf[DAP_PACKET_SIZE];
 } cmsis_dap_interface_t;
 
 CFG_TUSB_MEM_SECTION static cmsis_dap_interface_t _cmsis_dap_itf[CFG_TUD_CMSIS_DAP];
 
 #define ITF_MEM_RESET_SIZE   offsetof(cmsis_dap_interface_t, epout_sz)
 
+//--------------------------------------------------------------------+
+// Weak stubs: invoked if no strong implementation is available
+//--------------------------------------------------------------------+
+TU_ATTR_WEAK void tud_cmsis_dap_transfer_abort_cb(uint8_t intf) {
+  (void) intf;
+}
 
+TU_ATTR_WEAK void tud_cmsis_dap_swo_write_cb(uint8_t intf) {
+  (void) intf;
+}
+
+//--------------------------------------------------------------------+
+// APPLICATION API
+//--------------------------------------------------------------------+
 bool tud_cmsis_dap_n_mounted (uint8_t itf)
 {
   return _cmsis_dap_itf[itf].ep_in && _cmsis_dap_itf[itf].ep_out;
@@ -71,13 +86,17 @@ static void _prep_out_transaction(cmsis_dap_interface_t* p_itf)
 {
   uint8_t const rhport = 0;
 
-  // skip if previous transfer not complete
-  if ( usbd_edpt_busy(rhport, p_itf->ep_out) ) return;
+  // claim endpoint
+  TU_VERIFY(usbd_edpt_claim(rhport, p_itf->ep_out), );
 
-  unsigned occupancy = p_itf->request_wp - p_itf->request_rp;
+  uint8_t wp = p_itf->request_wp;
+
+  uint8_t occupancy = wp - p_itf->request_rp;
   if (occupancy < DAP_PACKET_COUNT) {
-    unsigned idx = p_itf->request_wp % DAP_PACKET_COUNT;
+    unsigned idx = wp % DAP_PACKET_COUNT;
     usbd_edpt_xfer(rhport, p_itf->ep_out, p_itf->epout_buf[idx], DAP_PACKET_SIZE);
+  } else {
+    usbd_edpt_release(rhport, p_itf->ep_out);
   }
 }
 
@@ -134,12 +153,15 @@ static void maybe_transmit(cmsis_dap_interface_t* p_itf)
   uint8_t const rhport = 0;
 
   // skip if previous transfer not complete
-  TU_VERIFY( !usbd_edpt_busy(rhport, p_itf->ep_in), );
+  TU_VERIFY( usbd_edpt_claim(rhport, p_itf->ep_in), );
 
-  if (p_itf->response_wp != p_itf->response_rp) {
-    unsigned idx = p_itf->response_rp % DAP_PACKET_COUNT;
-    TU_ASSERT( usbd_edpt_xfer(rhport, p_itf->ep_in, p_itf->epin_buf[idx], p_itf->epin_sz[idx]), );
-    ++p_itf->response_rp;
+  uint8_t rp = p_itf->response_rp;
+
+  if (p_itf->response_wp != rp) {
+    unsigned idx = rp % DAP_PACKET_COUNT;
+    usbd_edpt_xfer(rhport, p_itf->ep_in, p_itf->epin_buf[idx], p_itf->epin_sz[idx]);
+  } else {
+    usbd_edpt_release(rhport, p_itf->ep_in);
   }
 }
 
@@ -148,7 +170,7 @@ uint32_t tud_cmsis_dap_n_acquire_response_buffer(uint8_t itf, uint8_t **pbuf)
   TU_ASSERT(pbuf, 0);
   cmsis_dap_interface_t* p_itf = &_cmsis_dap_itf[itf];
 
-  unsigned occupancy = p_itf->response_wp - p_itf->response_rp;
+  uint8_t occupancy = p_itf->response_wp - p_itf->response_rp;
   if (occupancy < DAP_PACKET_COUNT) {
     unsigned idx = p_itf->response_wp % DAP_PACKET_COUNT;
     *pbuf = p_itf->epin_buf[idx];
@@ -164,6 +186,26 @@ void tud_cmsis_dap_n_release_response_buffer(uint8_t itf, uint32_t bufsize)
   p_itf->epin_sz[idx] = bufsize;
   ++p_itf->response_wp;
   maybe_transmit(p_itf);
+}
+
+//--------------------------------------------------------------------+
+// SWO API
+//--------------------------------------------------------------------+
+bool tud_cmsis_dap_n_swo_write(uint8_t itf, void const *data, uint16_t len)
+{
+  uint8_t const rhport = 0;
+  cmsis_dap_interface_t* p_itf = &_cmsis_dap_itf[itf];
+
+  // Check SWO EP
+  TU_VERIFY(p_itf->ep_swo != 0);
+
+  // claim endpoint
+  TU_VERIFY(usbd_edpt_claim(rhport, p_itf->ep_swo));
+
+  // prepare data
+  TU_VERIFY(0 == tu_memcpy_s(p_itf->epswo_buf, DAP_PACKET_SIZE, data, len));
+
+  return usbd_edpt_xfer(rhport, p_itf->ep_swo, p_itf->epswo_buf, len);
 }
 
 //--------------------------------------------------------------------+
@@ -215,9 +257,15 @@ uint16_t cmsis_dapd_open(uint8_t rhport, tusb_desc_interface_t const * desc_itf,
     }
 
     // Open endpoint pair with usbd helper
-    TU_ASSERT(usbd_open_edpt_pair(rhport, p_desc, desc_itf->bNumEndpoints, TUSB_XFER_BULK, &p_cmsis_dap->ep_out, &p_cmsis_dap->ep_in), 0);
+    TU_ASSERT(usbd_open_edpt_pair(rhport, p_desc, 2, TUSB_XFER_BULK, &p_cmsis_dap->ep_out, &p_cmsis_dap->ep_in), 0);
 
-    p_desc += desc_itf->bNumEndpoints*sizeof(tusb_desc_endpoint_t);
+    p_desc += 2 * sizeof(tusb_desc_endpoint_t);
+
+    if (desc_itf->bNumEndpoints == 3)
+    {
+      TU_ASSERT(usbd_open_edpt_pair(rhport, p_desc, 1, TUSB_XFER_BULK, NULL, &p_cmsis_dap->ep_swo), 0);
+      p_desc += sizeof(tusb_desc_endpoint_t);
+    }
 
     // Prepare for incoming data
     if ( p_cmsis_dap->ep_out )
@@ -243,7 +291,7 @@ bool cmsis_dapd_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t result, u
   {
     if (itf >= TU_ARRAY_SIZE(_cmsis_dap_itf)) return false;
 
-    if ( ( ep_addr == p_itf->ep_out ) || ( ep_addr == p_itf->ep_in ) ) break;
+    if ( ( ep_addr == p_itf->ep_out ) || ( ep_addr == p_itf->ep_in ) || ( ep_addr == p_itf->ep_swo )) break;
   }
 
   if ( ep_addr == p_itf->ep_out )
@@ -252,7 +300,7 @@ bool cmsis_dapd_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t result, u
       unsigned idx = p_itf->request_wp % DAP_PACKET_COUNT;
       p_itf->epout_sz[idx] = xferred_bytes;
       if (ID_DAP_TransferAbort == p_itf->epout_buf[idx][0]) {
-        if (tud_cmsis_dap_transfer_abort_cb) tud_cmsis_dap_transfer_abort_cb(itf);
+        tud_cmsis_dap_transfer_abort_cb(itf);
       } else {
         ++p_itf->request_wp;
       }
@@ -261,8 +309,13 @@ bool cmsis_dapd_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t result, u
   }
   else if ( ep_addr == p_itf->ep_in )
   {
+    ++p_itf->response_rp;
     // Send complete, try to send more if possible
     maybe_transmit(p_itf);
+  }
+  else if ( ep_addr == p_itf->ep_swo )
+  {
+    tud_cmsis_dap_swo_write_cb(itf);
   }
 
   return true;
