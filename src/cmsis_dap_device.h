@@ -30,8 +30,6 @@
  extern "C" {
 #endif
 
-extern usbd_class_driver_t const cmsis_dap;
-
 //--------------------------------------------------------------------+
 // Application API (Multiple Interfaces)
 //--------------------------------------------------------------------+
@@ -40,7 +38,8 @@ uint32_t tud_cmsis_dap_n_acquire_request_buffer(uint8_t itf, const uint8_t **pbu
 void     tud_cmsis_dap_n_release_request_buffer(uint8_t itf);
 uint32_t tud_cmsis_dap_n_acquire_response_buffer(uint8_t itf, uint8_t **pbuf);
 void     tud_cmsis_dap_n_release_response_buffer(uint8_t itf, uint32_t bufsize);
-   
+bool     tud_cmsis_dap_n_swo_write(uint8_t itf, void const *data, uint16_t len);
+
 //--------------------------------------------------------------------+
 // Application API (Single Port)
 //--------------------------------------------------------------------+
@@ -49,14 +48,17 @@ static inline uint32_t tud_cmsis_dap_acquire_request_buffer(const uint8_t **pbuf
 static inline void     tud_cmsis_dap_release_request_buffer(void);
 static inline uint32_t tud_cmsis_dap_acquire_response_buffer(uint8_t **pbuf);
 static inline void     tud_cmsis_dap_release_response_buffer(uint32_t bufsize);
+static inline bool     tud_cmsis_dap_swo_write(void const *data, uint16_t len);
 
 //--------------------------------------------------------------------+
 // Application Callback API (weak is optional)
 //--------------------------------------------------------------------+
 
-// Invoked when received new data
-TU_ATTR_WEAK void tud_cmsis_dap_transfer_abort_cb(uint8_t itf);
+// Invoked when abort request is received
+void tud_cmsis_dap_transfer_abort_cb(uint8_t itf);
 
+// Invoked when SWO transfer finished
+void tud_cmsis_dap_swo_write_cb(uint8_t intf);
 //--------------------------------------------------------------------+
 // Inline Functions
 //--------------------------------------------------------------------+
@@ -65,15 +67,15 @@ static inline bool tud_cmsis_dap_mounted (void)
 {
   return tud_cmsis_dap_n_mounted(0);
 }
-   
+
 static inline uint32_t tud_cmsis_dap_acquire_request_buffer(const uint8_t **pbuf)
 {
   return tud_cmsis_dap_n_acquire_request_buffer(0, pbuf);
 }
 
-static inline void     tud_cmsis_dap_release_request_buffer(void)
+static inline void tud_cmsis_dap_release_request_buffer(void)
 {
-  return tud_cmsis_dap_n_release_request_buffer(0);
+  tud_cmsis_dap_n_release_request_buffer(0);
 }
 
 static inline uint32_t tud_cmsis_dap_acquire_response_buffer(uint8_t **pbuf)
@@ -81,9 +83,14 @@ static inline uint32_t tud_cmsis_dap_acquire_response_buffer(uint8_t **pbuf)
   return tud_cmsis_dap_n_acquire_response_buffer(0, pbuf);
 }
 
-static inline void     tud_cmsis_dap_release_response_buffer(uint32_t bufsize)
+static inline void tud_cmsis_dap_release_response_buffer(uint32_t bufsize)
 {
-  return tud_cmsis_dap_n_release_response_buffer(0, bufsize);
+  tud_cmsis_dap_n_release_response_buffer(0, bufsize);
+}
+
+static inline bool tud_cmsis_dap_swo_write(void const *data, uint16_t len)
+{
+  return tud_cmsis_dap_n_swo_write(0, data, len);
 }
 
 //--------------------------------------------------------------------+
