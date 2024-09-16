@@ -18,7 +18,12 @@ endif()
 
 project(akiprobe)
 
-set(PICO_BOARD pico)
+if (NOT PICO_BOARD)
+  set(PICO_BOARD pico)
+endif()
+if (NOT PICO_COMPILER)
+  set(PICO_COMPILER pico_arm_gcc)
+endif()
 set(PICO_COPY_TO_RAM 1)
 
 pico_sdk_init()
