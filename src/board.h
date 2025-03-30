@@ -23,6 +23,7 @@
 #ifndef _BSP_BOARD_H_
 #define _BSP_BOARD_H_
 
+#include <stdbool.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,14 +33,12 @@ extern "C" {
 #include "tusb.h"
 
 void board_init(void);
-
-void board_uart_set_baudrate(unsigned bit_rate);
-
-// Get characters from UART
+uint32_t board_uart_set_baudrate(unsigned bit_rate);
 int board_uart_read(uint8_t* buf, int len);
-
-// Send characters to UART
 int board_uart_write(void const * buf, int len);
+int board_swo_set_enabled(int enabled);
+uint32_t board_swo_set_baudrate(unsigned bit_rate);
+int board_swo_read(uint8_t* buf, int len);
 
 #ifdef __cplusplus
 }

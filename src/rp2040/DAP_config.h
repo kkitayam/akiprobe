@@ -90,7 +90,7 @@ This information includes:
 
 /// Indicate that UART Serial Wire Output (SWO) trace is available.
 /// This information is returned by the command \ref DAP_Info as part of <b>Capabilities</b>.
-#define SWO_UART                0               ///< SWO UART:  1 = available, 0 = not available.
+#define SWO_UART                1               ///< SWO UART:  1 = available, 0 = not available.
 
 /// USART Driver instance number for the UART SWO.
 #define SWO_UART_DRIVER         0               ///< USART Driver instance number (Driver_USART#).
@@ -340,8 +340,8 @@ __STATIC_INLINE void PORT_SWD_SETUP (void) {
   gpio_set_function(PIN_SWDIO_TMS_BIT, GPIO_FUNC_SIO);
   gpio_set_function(PIN_nRESET_BIT, GPIO_FUNC_SIO);
 
-  gpio_set_pulls(PIN_SWCLK_TCK_BIT, false, true);
-  gpio_set_pulls(PIN_SWDIO_TMS_BIT, true, false);
+  gpio_pull_down(PIN_SWCLK_TCK_BIT);
+  gpio_pull_up(PIN_SWDIO_TMS_BIT);
   gpio_set_drive_strength(PIN_SWCLK_TCK_BIT, GPIO_DRIVE_STRENGTH_2MA);
   gpio_set_drive_strength(PIN_SWDIO_TMS_BIT, GPIO_DRIVE_STRENGTH_2MA);
 }
@@ -515,6 +515,7 @@ __STATIC_FORCEINLINE uint32_t PIN_nRESET_IN  (void) {
 */
 __STATIC_FORCEINLINE void     PIN_nRESET_OUT (uint32_t bit) {
   bool out = (bit & 1u) ? false: true;
+  gpio_clr_mask(1u << PIN_nRESET_BIT);
   gpio_set_dir(PIN_nRESET_BIT, out);
 }
 
@@ -600,7 +601,7 @@ __STATIC_INLINE void DAP_SETUP (void) {
   gpio_set_function(PIN_TDO_BIT, GPIO_FUNC_NULL);
   gpio_set_function(PIN_nRESET_BIT, GPIO_FUNC_NULL);
   gpio_set_function(PIN_RUNNING_LED_BIT, GPIO_FUNC_SIO);
-  gpio_set_pulls(PIN_nRESET_BIT, true, false);
+  gpio_pull_up(PIN_nRESET_BIT);
   gpio_set_dir_out_masked(1u << PIN_RUNNING_LED_BIT);
 }
 

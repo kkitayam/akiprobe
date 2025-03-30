@@ -175,6 +175,7 @@ void board_init(void)
 //--------------------------------------------------------------------+
 void board_led_write(bool state)
 {
+  (void)state;
 #ifdef LED_PORT
   Chip_GPIO_SetPinState(LPC_GPIO, LED_PORT, LED_PIN, state ? LED_STATE_ON : (1-LED_STATE_ON));
 #endif
@@ -185,21 +186,19 @@ uint32_t board_button_read(void)
   return BUTTON_STATE_ACTIVE == Chip_GPIO_GetPinState(LPC_GPIO, BUTTON_PORT, BUTTON_PIN);
 }
 
-void board_uart_set_baudrate(unsigned bit_rate)
+uint32_t board_uart_set_baudrate(unsigned bit_rate)
 {
-  Chip_UART_SetBaud(LPC_USART, bit_rate);
+  return Chip_UART_SetBaud(LPC_USART, bit_rate);
 }
 
 int board_uart_read(uint8_t* buf, int len)
 {
   return Chip_UART_Read(LPC_USART, buf, len);
-  //  return Chip_UART_ReadBlocking(LPC_USART, buf, len);
 }
 
 int board_uart_write(void const * buf, int len)
 {
   return Chip_UART_Send(LPC_USART, buf, len);
-  //  return Chip_UART_SendBlocking(LPC_USART, buf, len);
 }
 
 #if CFG_TUSB_OS == OPT_OS_NONE

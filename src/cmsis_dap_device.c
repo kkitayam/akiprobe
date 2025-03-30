@@ -21,6 +21,7 @@
  * THE SOFTWARE. */
 
 #include "tusb_option.h"
+#include <stdint.h>
 
 #if (CFG_TUD_ENABLED && CFG_TUD_CMSIS_DAP)
 
@@ -32,6 +33,8 @@
 #include "DAP_config.h"
 #include "DAP.h"
 
+extern uint32_t SWO_GetTransportMode(void);
+
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF
 //--------------------------------------------------------------------+
@@ -40,7 +43,9 @@ typedef struct
   uint8_t itf_num;
   uint8_t ep_in;
   uint8_t ep_out;
+  #if (SWO_STREAM != 0)
   uint8_t ep_swo;
+  #endif
 
   volatile uint8_t request_wp;
   volatile uint8_t request_rp;
@@ -50,10 +55,17 @@ typedef struct
   /*------------- From this point, data is not cleared by bus reset -------------*/
   uint16_t epout_sz[DAP_PACKET_COUNT];
   uint16_t epin_sz[DAP_PACKET_COUNT];
+  #if ((SWO_UART != 0) || (SWO_MANCHESTER != 0))
+  tu_fifo_t swo_ff;
+  uint8_t swo_ff_buf[SWO_BUFFER_SIZE];
+  #endif
+
   // Endpoint Transfer buffer
   CFG_TUSB_MEM_ALIGN uint8_t epout_buf[DAP_PACKET_COUNT][DAP_PACKET_SIZE];
   CFG_TUSB_MEM_ALIGN uint8_t epin_buf[DAP_PACKET_COUNT][DAP_PACKET_SIZE];
+  #if (SWO_STREAM != 0)
   CFG_TUSB_MEM_ALIGN uint8_t epswo_buf[DAP_PACKET_SIZE];
+  #endif
 } cmsis_dap_interface_t;
 
 CFG_TUSB_MEM_SECTION static cmsis_dap_interface_t _cmsis_dap_itf[CFG_TUD_CMSIS_DAP];
@@ -188,25 +200,71 @@ void tud_cmsis_dap_n_release_response_buffer(uint8_t itf, uint32_t bufsize)
   maybe_transmit(p_itf);
 }
 
+#if ((SWO_UART != 0) || (SWO_MANCHESTER != 0))
 //--------------------------------------------------------------------+
 // SWO API
 //--------------------------------------------------------------------+
-bool tud_cmsis_dap_n_swo_write(uint8_t itf, void const *data, uint16_t len)
+#if (SWO_STREAM != 0)
+static void maybe_transmit_swo(cmsis_dap_interface_t* p_itf)
 {
-  uint8_t const rhport = 0;
-  cmsis_dap_interface_t* p_itf = &_cmsis_dap_itf[itf];
+  if (2 != SWO_GetTransportMode()) return;
 
-  // Check SWO EP
-  TU_VERIFY(p_itf->ep_swo != 0);
+  const uint8_t rhport = 0;
 
-  // claim endpoint
-  TU_VERIFY(usbd_edpt_claim(rhport, p_itf->ep_swo));
+  // Claim the endpoint
+  TU_VERIFY(usbd_edpt_claim(rhport, p_itf->ep_swo), );
 
-  // prepare data
-  TU_VERIFY(0 == tu_memcpy_s(p_itf->epswo_buf, DAP_PACKET_SIZE, data, len));
+  // Pull data from FIFO
+  const uint16_t count = tu_fifo_read_n(&p_itf->swo_ff, p_itf->epswo_buf, DAP_PACKET_SIZE);
 
-  return usbd_edpt_xfer(rhport, p_itf->ep_swo, p_itf->epswo_buf, len);
+  if (count) {
+    TU_ASSERT(usbd_edpt_xfer(rhport, p_itf->ep_swo, p_itf->epswo_buf, count), );
+  } else {
+    // Release endpoint since we don't make any transfer
+    // Note: data is dropped if terminal is not connected
+    usbd_edpt_release(rhport, p_itf->ep_swo);
+  }
 }
+#else
+# define maybe_transmit_swo(p_itf)
+#endif
+
+uint32_t tud_cmsis_dap_n_swo_enqueue(uint8_t itf, void const *data, uint32_t len)
+{
+  cmsis_dap_interface_t* p_itf = &_cmsis_dap_itf[itf];
+  uint16_t ret = tu_fifo_write_n(&p_itf->swo_ff, data, (uint16_t)TU_MIN(len, UINT16_MAX));
+  maybe_transmit_swo(p_itf);
+  return ret;
+}
+
+uint32_t tud_cmsis_dap_n_swo_dequeue(uint8_t itf, void* buffer, uint32_t bufsize)
+{
+  if (1 != SWO_GetTransportMode()) return 0;
+
+  cmsis_dap_interface_t* p_itf = &_cmsis_dap_itf[itf];
+  const uint16_t count = tu_fifo_read_n(&p_itf->swo_ff, buffer, bufsize);
+  return count;
+}
+
+uint32_t tud_cmsis_dap_n_swo_free(uint8_t itf)
+{
+  cmsis_dap_interface_t* p_itf = &_cmsis_dap_itf[itf];
+  return tu_fifo_remaining(&p_itf->swo_ff);
+}
+
+uint32_t tud_cmsis_dap_n_swo_used(uint8_t itf)
+{
+  cmsis_dap_interface_t* p_itf = &_cmsis_dap_itf[itf];
+  return tu_fifo_count(&p_itf->swo_ff);
+}
+
+uint32_t tud_cmsis_dap_n_swo_clear(uint8_t itf)
+{
+  cmsis_dap_interface_t* p_itf = &_cmsis_dap_itf[itf];
+  return tu_fifo_clear(&p_itf->swo_ff);
+}
+
+#endif
 
 //--------------------------------------------------------------------+
 // USBD Driver API
@@ -214,6 +272,17 @@ bool tud_cmsis_dap_n_swo_write(uint8_t itf, void const *data, uint16_t len)
 void cmsis_dapd_init(void)
 {
   tu_memclr(_cmsis_dap_itf, sizeof(_cmsis_dap_itf));
+#if ((SWO_UART != 0) || (SWO_MANCHESTER != 0))
+  for(uint_fast8_t i = 0; i < CFG_TUD_CMSIS_DAP; i++) {
+    cmsis_dap_interface_t* p_itf = &_cmsis_dap_itf[i];
+    tu_fifo_config(&p_itf->swo_ff, p_itf->swo_ff_buf, TU_ARRAY_SIZE(p_itf->swo_ff_buf), 1, true);
+  }
+#endif
+}
+
+bool cmsis_dapd_deinit(void)
+{
+  return true;
 }
 
 void cmsis_dapd_reset(uint8_t rhport)
@@ -225,6 +294,10 @@ void cmsis_dapd_reset(uint8_t rhport)
     cmsis_dap_interface_t* p_itf = &_cmsis_dap_itf[i];
 
     tu_memclr(p_itf, ITF_MEM_RESET_SIZE);
+#if ((SWO_UART != 0) || (SWO_MANCHESTER != 0))
+    tu_fifo_clear(&p_itf->swo_ff);
+    tu_fifo_set_overwritable(&p_itf->swo_ff, true);
+#endif
   }
 }
 
@@ -261,11 +334,13 @@ uint16_t cmsis_dapd_open(uint8_t rhport, tusb_desc_interface_t const * desc_itf,
 
     p_desc += 2 * sizeof(tusb_desc_endpoint_t);
 
+  #if (SWO_STREAM != 0)
     if (desc_itf->bNumEndpoints == 3)
     {
       TU_ASSERT(usbd_open_edpt_pair(rhport, p_desc, 1, TUSB_XFER_BULK, NULL, &p_cmsis_dap->ep_swo), 0);
       p_desc += sizeof(tusb_desc_endpoint_t);
     }
+  #endif
 
     // Prepare for incoming data
     if ( p_cmsis_dap->ep_out )
@@ -291,7 +366,12 @@ bool cmsis_dapd_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t result, u
   {
     if (itf >= TU_ARRAY_SIZE(_cmsis_dap_itf)) return false;
 
-    if ( ( ep_addr == p_itf->ep_out ) || ( ep_addr == p_itf->ep_in ) || ( ep_addr == p_itf->ep_swo )) break;
+    if ( ( ep_addr == p_itf->ep_out ) || ( ep_addr == p_itf->ep_in )
+#if (SWO_STREAM != 0)
+         || ( ep_addr == p_itf->ep_swo )
+#endif
+      )
+      break;
   }
 
   if ( ep_addr == p_itf->ep_out )
@@ -313,10 +393,13 @@ bool cmsis_dapd_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t result, u
     // Send complete, try to send more if possible
     maybe_transmit(p_itf);
   }
+#if (SWO_STREAM != 0)
   else if ( ep_addr == p_itf->ep_swo )
   {
-    tud_cmsis_dap_swo_write_cb(itf);
+    // try to send more if possible
+    maybe_transmit_swo(p_itf);
   }
+#endif
 
   return true;
 }
