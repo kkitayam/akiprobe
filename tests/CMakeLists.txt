@@ -31,8 +31,7 @@ target_include_directories(class_driver_api_tests PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/
   ${CMAKE_CURRENT_SOURCE_DIR}/../src
   ${CMAKE_CURRENT_SOURCE_DIR}/../lib/tinyusb/src
-  ${CMAKE_CURRENT_SOURCE_DIR}/../lib/CMSIS_5/CMSIS/Core/Include
-  ${CMAKE_CURRENT_SOURCE_DIR}/../lib/CMSIS_5/CMSIS/DAP/Firmware/Include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../lib/CMSIS-DAP/Firmware/Include
 )
 
 target_link_libraries(class_driver_api_tests
