@@ -24,9 +24,6 @@ TEST(Class, open)
     .WillOnce(DoAll(SetArgPointee<4>(EPNUM_VENDOR_OUT),
                     SetArgPointee<5>(0x80 | EPNUM_VENDOR_IN),
                     Return(true)));
-  EXPECT_CALL(mtu, usbd_edpt_busy)
-    .Times(1)
-    .WillOnce(Return(false));
   EXPECT_CALL(mtu, usbd_edpt_xfer)
     .Times(1)
     .WillOnce(Return(true));
