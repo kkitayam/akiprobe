@@ -267,7 +267,8 @@ __STATIC_INLINE uint8_t DAP_GetProductFirmwareVersionString (char *str) {
 // nRESET Pin                     GP6
 #define PIN_nRESET_BIT            6
 // Connected LED                Not available
-// Target Running LED           Not available
+// Target Running LED             GP25
+#define PIN_RUNNING_LED_BIT       25
 
 
 //**************************************************************************************************
@@ -356,6 +357,7 @@ __STATIC_INLINE void PORT_OFF (void) {
   gpio_set_function(PIN_SWDIO_TMS_BIT, GPIO_FUNC_NULL);
   gpio_set_function(PIN_TDI_BIT, GPIO_FUNC_NULL);
   gpio_set_function(PIN_TDO_BIT, GPIO_FUNC_NULL);
+  gpio_set_function(PIN_RUNNING_LED_BIT, GPIO_FUNC_NULL);
   gpio_set_function(PIN_nRESET_BIT, GPIO_FUNC_NULL);
 }
 
@@ -462,7 +464,7 @@ __STATIC_FORCEINLINE uint32_t PIN_TDI_IN  (void) {
 \param bit Output value for the TDI DAP hardware I/O pin.
 */
 __STATIC_FORCEINLINE void     PIN_TDI_OUT (uint32_t bit) {
-  return gpio_put(PIN_TDI_BIT, bit & 1u);
+  gpio_put(PIN_TDI_BIT, bit & 1u);
 }
 
 
@@ -545,7 +547,9 @@ __STATIC_INLINE void LED_CONNECTED_OUT (uint32_t bit) {}
            - 1: Target Running LED ON: program execution in target started.
            - 0: Target Running LED OFF: program execution in target stopped.
 */
-__STATIC_INLINE void LED_RUNNING_OUT (uint32_t bit) {}
+__STATIC_INLINE void LED_RUNNING_OUT (uint32_t bit) {
+  gpio_put(PIN_RUNNING_LED_BIT, bit & 1u);
+}
 
 ///@}
 
@@ -596,7 +600,9 @@ __STATIC_INLINE void DAP_SETUP (void) {
   gpio_set_function(PIN_TDI_BIT, GPIO_FUNC_NULL);
   gpio_set_function(PIN_TDO_BIT, GPIO_FUNC_NULL);
   gpio_set_function(PIN_nRESET_BIT, GPIO_FUNC_NULL);
+  gpio_set_function(PIN_RUNNING_LED_BIT, GPIO_FUNC_SIO);
   gpio_set_pulls(PIN_nRESET_BIT, true, false);
+  gpio_set_dir_out_masked(1u << PIN_RUNNING_LED_BIT);
 }
 
 /** Reset Target Device with custom specific I/O pin or command sequence.
