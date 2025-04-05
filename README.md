@@ -69,8 +69,8 @@ $ cmake --build build_pico
 |:------------:|:---:|:------:|
 | SWCLK/TCK    |  4  | GP2    |
 | SWDIO/TMS    |  5  | GP3    |
-| TDI          |  6  | GP4    |
-| TDO          |  7  | GP5    |
+| TDI          |  1  | GP0    |
+| TDO          |  2  | GP1    |
 | nRESET       |  9  | GP6    |
 | UART TX      | 11  | GP8    |
 | UART RX      | 12  | GP9    |

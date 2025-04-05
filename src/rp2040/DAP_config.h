@@ -258,10 +258,10 @@ __STATIC_INLINE uint8_t DAP_GetProductFirmwareVersionString (char *str) {
 #define PIN_SWCLK_TCK_BIT         2
 // SWDIO/TMS Pin                  GP3
 #define PIN_SWDIO_TMS_BIT         3
-// TDI Pin                        GP4
-#define PIN_TDI_BIT               4
-// TDO Pin                        GP5
-#define PIN_TDO_BIT               5
+// TDI Pin                        GP0
+#define PIN_TDI_BIT               0
+// TDO Pin                        GP1
+#define PIN_TDO_BIT               1
 // nTRST Pin                    Not available
 //#define PIN_nTRST_BIT
 // nRESET Pin                     GP6
@@ -357,7 +357,6 @@ __STATIC_INLINE void PORT_OFF (void) {
   gpio_set_function(PIN_SWDIO_TMS_BIT, GPIO_FUNC_NULL);
   gpio_set_function(PIN_TDI_BIT, GPIO_FUNC_NULL);
   gpio_set_function(PIN_TDO_BIT, GPIO_FUNC_NULL);
-  gpio_set_function(PIN_RUNNING_LED_BIT, GPIO_FUNC_NULL);
   gpio_set_function(PIN_nRESET_BIT, GPIO_FUNC_NULL);
 }
 
