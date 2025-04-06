@@ -22,6 +22,7 @@
 
 #include "tusb.h"
 #include "usb_descriptors.h"
+#include "DAP_config.h"
 
 /* A combination of interfaces must have a unique product id, since PC will save device driver after the first plug.
  * Same VID/PID with different interface e.g MSC (first), then CDC (later) will possibly cause system error on PC.
@@ -78,7 +79,11 @@ enum
   ITF_NUM_TOTAL
 };
 
-#define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_VENDOR_DESC_LEN)
+#if (SWO_STREAM!=0)
+# define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_CMSIS_DAP_DESC_LEN)
+#else
+# define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_VENDOR_DESC_LEN)
+#endif
 
 #if CFG_TUSB_MCU == OPT_MCU_LPC175X_6X || CFG_TUSB_MCU == OPT_MCU_LPC177X_8X || CFG_TUSB_MCU == OPT_MCU_LPC40XX
   // LPC 17xx and 40xx endpoint type (bulk/interrupt/iso) are fixed by its number
@@ -99,6 +104,7 @@ enum
   #define EPNUM_CDC_OUT    2
   #define EPNUM_VENDOR_IN  3
   #define EPNUM_VENDOR_OUT 3
+  #define EPNUM_VENDOR_IN2 4
 #endif
 
 uint8_t const desc_configuration[] =
@@ -109,8 +115,13 @@ uint8_t const desc_configuration[] =
   // Interface number, string index, EP notification address and size, EP data address (out, in) and size.
   TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, 4, 0x81, 8, EPNUM_CDC_OUT, 0x80 | EPNUM_CDC_IN, TUD_OPT_HIGH_SPEED ? 512 : 64),
 
+#if (SWO_STREAM!=0)
+  // Interface number, string index, EP Out & IN address, EP size
+  TUD_CMSIS_DAP_DESCRIPTOR(ITF_NUM_VENDOR, 5, EPNUM_VENDOR_OUT, 0x80 | EPNUM_VENDOR_IN, 0x80 | EPNUM_VENDOR_IN2, TUD_OPT_HIGH_SPEED ? 512 : 64),
+#else
   // Interface number, string index, EP Out & IN address, EP size
   TUD_VENDOR_DESCRIPTOR(ITF_NUM_VENDOR, 5, EPNUM_VENDOR_OUT, 0x80 | EPNUM_VENDOR_IN, TUD_OPT_HIGH_SPEED ? 512 : 64)
+#endif
 };
 
 // Invoked when received GET CONFIGURATION DESCRIPTOR
