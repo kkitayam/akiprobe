@@ -79,49 +79,210 @@ enum
   ITF_NUM_TOTAL
 };
 
-#if (SWO_STREAM!=0)
-# define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_CMSIS_DAP_DESC_LEN)
-#else
-# define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_VENDOR_DESC_LEN)
-#endif
-
 #if CFG_TUSB_MCU == OPT_MCU_LPC175X_6X || CFG_TUSB_MCU == OPT_MCU_LPC177X_8X || CFG_TUSB_MCU == OPT_MCU_LPC40XX
   // LPC 17xx and 40xx endpoint type (bulk/interrupt/iso) are fixed by its number
   // 0 control, 1 In, 2 Bulk, 3 Iso, 4 In etc ...
   #define EPNUM_CDC_IN     2
   #define EPNUM_CDC_OUT    2
-  #define EPNUM_VENDOR_IN  5
-  #define EPNUM_VENDOR_OUT 5
+  #define EPNUM_DAP_IN     5
+  #define EPNUM_DAP_OUT    5
 #elif CFG_TUSB_MCU == OPT_MCU_SAMG || CFG_TUSB_MCU ==  OPT_MCU_SAMX7X
   // SAMG & SAME70 don't support a same endpoint number with different direction IN and OUT
   //    e.g EP1 OUT & EP1 IN cannot exist together
   #define EPNUM_CDC_IN     2
   #define EPNUM_CDC_OUT    3
-  #define EPNUM_VENDOR_IN  4
-  #define EPNUM_VENDOR_OUT 5
+  #define EPNUM_DAP_IN     4
+  #define EPNUM_DAP_OUT    5
 #else
   #define EPNUM_CDC_IN     2
   #define EPNUM_CDC_OUT    2
-  #define EPNUM_VENDOR_IN  3
-  #define EPNUM_VENDOR_OUT 3
-  #define EPNUM_VENDOR_IN2 4
+  #define EPNUM_DAP_IN     3
+  #define EPNUM_DAP_OUT    3
+  #define EPNUM_SWO_IN     4
 #endif
 
-uint8_t const desc_configuration[] =
-{
-  // Config number, interface count, string index, total length, attribute, power in mA
-  TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100),
 
-  // Interface number, string index, EP notification address and size, EP data address (out, in) and size.
-  TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, 4, 0x81, 8, EPNUM_CDC_OUT, 0x80 | EPNUM_CDC_IN, TUD_OPT_HIGH_SPEED ? 512 : 64),
+typedef struct TU_ATTR_PACKED {
+  tusb_desc_interface_assoc_t iad;
+  struct {
+    tusb_desc_interface_t itf;
+    cdc_desc_func_header_t hdr;
+    cdc_desc_func_call_management_t call_mgmt;
+    cdc_desc_func_acm_t acm;
+    cdc_desc_func_union_t uni;
+    tusb_desc_endpoint_t ep_ntfy;
+  } control;
+  struct {
+    tusb_desc_interface_t itf;
+    tusb_desc_endpoint_t ep_out;
+    tusb_desc_endpoint_t ep_in;
+  } data;
+} cdc_acm_desc_t;
 
+typedef struct TU_ATTR_PACKED {
+  tusb_desc_interface_t itf;
+  tusb_desc_endpoint_t ep_out;
+  tusb_desc_endpoint_t ep_in;
 #if (SWO_STREAM!=0)
-  // Interface number, string index, EP Out & IN address, EP size
-  TUD_CMSIS_DAP_DESCRIPTOR(ITF_NUM_VENDOR, 5, EPNUM_VENDOR_OUT, 0x80 | EPNUM_VENDOR_IN, 0x80 | EPNUM_VENDOR_IN2, TUD_OPT_HIGH_SPEED ? 512 : 64),
-#else
-  // Interface number, string index, EP Out & IN address, EP size
-  TUD_VENDOR_DESCRIPTOR(ITF_NUM_VENDOR, 5, EPNUM_VENDOR_OUT, 0x80 | EPNUM_VENDOR_IN, TUD_OPT_HIGH_SPEED ? 512 : 64)
+  tusb_desc_endpoint_t ep_swo;
 #endif
+} cmsis_dap_v2_desc_t;
+
+typedef struct TU_ATTR_PACKED {
+  tusb_desc_configuration_t config;
+  cdc_acm_desc_t cdc_acm;
+  cmsis_dap_v2_desc_t cmsis_dap_v2;
+} cmsis_dap_cfg_desc_t;
+
+ 
+// Config number, interface count, string index, total length, attribute, power in mA
+#define TUD_CONFIG_DESCRIPTOR_STRUCT(config_num, _itfcount, _stridx, _total_len, _attribute, _power_ma) \
+  { \
+    .bLength = sizeof(tusb_desc_configuration_t), \
+    .bDescriptorType = TUSB_DESC_CONFIGURATION, \
+    .wTotalLength = (_total_len), \
+    .bNumInterfaces = (_itfcount), \
+    .bConfigurationValue = config_num, \
+    .iConfiguration = (_stridx), \
+    .bmAttributes =  (TU_BIT(7) | (_attribute)), \
+    .bMaxPower = (_power_ma) / 2 \
+  }
+
+#define TUD_BULK_EP_DESCRIPTOR_STRUCT(_epnum, _epsize) \
+  { \
+    .bLength = sizeof(tusb_desc_endpoint_t), \
+    .bDescriptorType = TUSB_DESC_ENDPOINT, \
+    .bEndpointAddress = (_epnum), \
+    .bmAttributes = {.xfer = TUSB_XFER_BULK}, \
+    .wMaxPacketSize = (_epsize), \
+    .bInterval = 0 \
+  }
+
+#define TUD_CDC_DESCRIPTOR_STRUCT(_itfnum, _stridx, _ep_notif, _ep_notif_size, _epout, _epin, _epsize) \
+  { \
+    .iad = { \
+      .bLength = sizeof(tusb_desc_interface_assoc_t), \
+      .bDescriptorType = TUSB_DESC_INTERFACE_ASSOCIATION, \
+      .bFirstInterface = (_itfnum), \
+      .bInterfaceCount = 2, \
+      .bFunctionClass = TUSB_CLASS_CDC, \
+      .bFunctionSubClass = CDC_COMM_SUBCLASS_ABSTRACT_CONTROL_MODEL, \
+      .bFunctionProtocol = CDC_COMM_PROTOCOL_NONE, \
+      .iFunction = 0 \
+    }, \
+    .control = { \
+      .itf = { \
+        .bLength = sizeof(tusb_desc_interface_t), \
+        .bDescriptorType = TUSB_DESC_INTERFACE, \
+        .bInterfaceNumber = (_itfnum), \
+        .bAlternateSetting = 0, \
+        .bNumEndpoints = 1, \
+        .bInterfaceClass = TUSB_CLASS_CDC, \
+        .bInterfaceSubClass = CDC_COMM_SUBCLASS_ABSTRACT_CONTROL_MODEL, \
+        .bInterfaceProtocol = CDC_COMM_PROTOCOL_NONE, \
+        .iInterface = (_stridx) \
+      }, \
+      .hdr = { \
+        .bLength = sizeof(cdc_desc_func_header_t), \
+        .bDescriptorType = TUSB_DESC_CS_INTERFACE, \
+        .bDescriptorSubType = CDC_FUNC_DESC_HEADER, \
+        .bcdCDC = 0x0120 \
+      }, \
+      .call_mgmt = { \
+        .bLength = sizeof(cdc_desc_func_call_management_t), \
+        .bDescriptorType = TUSB_DESC_CS_INTERFACE, \
+        .bDescriptorSubType = CDC_FUNC_DESC_CALL_MANAGEMENT, \
+        .bmCapabilities = {}, \
+        .bDataInterface = (_itfnum) + 1 \
+      }, \
+      .acm = { \
+        .bLength = sizeof(cdc_desc_func_acm_t), \
+        .bDescriptorType = TUSB_DESC_CS_INTERFACE, \
+        .bDescriptorSubType = CDC_FUNC_DESC_ABSTRACT_CONTROL_MANAGEMENT, \
+        .bmCapabilities = {.support_line_request = 1, .support_send_break = 1} \
+      }, \
+      .uni = { \
+        .bLength = sizeof(cdc_desc_func_union_t), \
+        .bDescriptorType = TUSB_DESC_CS_INTERFACE, \
+        .bDescriptorSubType = CDC_FUNC_DESC_UNION, \
+        .bControlInterface = (_itfnum), \
+        .bSubordinateInterface = (_itfnum) + 1 \
+      }, \
+      .ep_ntfy = { \
+        .bLength = sizeof(tusb_desc_endpoint_t), \
+        .bDescriptorType = TUSB_DESC_ENDPOINT, \
+        .bEndpointAddress = (_ep_notif), \
+        .bmAttributes = {.xfer = TUSB_XFER_INTERRUPT}, \
+        .wMaxPacketSize = (_ep_notif_size), \
+        .bInterval = 16 \
+      } \
+    }, \
+    .data = { \
+      .itf = { \
+        .bLength = sizeof(tusb_desc_interface_t), \
+        .bDescriptorType = TUSB_DESC_INTERFACE, \
+        .bInterfaceNumber = (_itfnum + 1), \
+        .bAlternateSetting = 0, \
+        .bNumEndpoints = 2, \
+        .bInterfaceClass = TUSB_CLASS_CDC_DATA, \
+        .bInterfaceSubClass = 0, \
+        .bInterfaceProtocol = 0, \
+        .iInterface = 0 \
+      }, \
+      .ep_out = TUD_BULK_EP_DESCRIPTOR_STRUCT(_epout, _epsize), \
+      .ep_in = TUD_BULK_EP_DESCRIPTOR_STRUCT(_epin, _epsize) \
+    } \
+  }
+
+#define TUD_CMSIS_DAP_DESCRIPTOR_STRUCT(...) \
+  TU_XSTRCAT(TUD_CMSIS_DAP_DESCRIPTOR_STRUCT_, TU_ARGS_NUM(__VA_ARGS__))(__VA_ARGS__)
+
+#define TUD_CMSIS_DAP_DESCRIPTOR_STRUCT_5(_itfnum, _stridx, _epout, _epin, _epsize) \
+  { \
+    .itf = { \
+      .bLength = sizeof(tusb_desc_interface_t), \
+      .bDescriptorType = TUSB_DESC_INTERFACE, \
+      .bInterfaceNumber = (_itfnum), \
+      .bAlternateSetting = 0, \
+      .bNumEndpoints = 2, \
+      .bInterfaceClass = TUSB_CLASS_VENDOR_SPECIFIC, \
+      .bInterfaceSubClass = 0, \
+      .bInterfaceProtocol = 0, \
+      .iInterface = (_stridx) \
+    }, \
+    .ep_out = TUD_BULK_EP_DESCRIPTOR_STRUCT(_epout, _epsize), \
+    .ep_in = TUD_BULK_EP_DESCRIPTOR_STRUCT(_epin, _epsize) \
+  }
+
+#define TUD_CMSIS_DAP_DESCRIPTOR_STRUCT_6(_itfnum, _stridx, _epout, _epin, _epswo, _epsize) \
+  { \
+    .itf = { \
+      .bLength = sizeof(tusb_desc_interface_t), \
+      .bDescriptorType = TUSB_DESC_INTERFACE, \
+      .bInterfaceNumber = (_itfnum), \
+      .bAlternateSetting = 0, \
+      .bNumEndpoints = 3, \
+      .bInterfaceClass = TUSB_CLASS_VENDOR_SPECIFIC, \
+      .bInterfaceSubClass = 0, \
+      .bInterfaceProtocol = 0, \
+      .iInterface = (_stridx) \
+    }, \
+    .ep_out = TUD_BULK_EP_DESCRIPTOR_STRUCT(_epout, _epsize), \
+    .ep_in = TUD_BULK_EP_DESCRIPTOR_STRUCT(_epin, _epsize), \
+    .ep_swo = TUD_BULK_EP_DESCRIPTOR_STRUCT(_epswo, _epsize) \
+  }
+
+const cmsis_dap_cfg_desc_t desc_fs_configuration = {
+  // Config number, interface count, string index, total length, attribute, power in mA
+  .config = TUD_CONFIG_DESCRIPTOR_STRUCT(1, ITF_NUM_TOTAL, 0, sizeof(cmsis_dap_cfg_desc_t), TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100),
+  // Interface number, string index, EP notification address and size, EP data address (out, in) and size.
+  .cdc_acm = TUD_CDC_DESCRIPTOR_STRUCT(ITF_NUM_CDC, 4, 0x81, 8, EPNUM_CDC_OUT, 0x80 | EPNUM_CDC_IN, TUD_OPT_HIGH_SPEED ? 512 : 64),
+  // Interface number, string index, EP dap address(out, in), EP swo address if needed and size.
+  .cmsis_dap_v2 = TUD_CMSIS_DAP_DESCRIPTOR_STRUCT(ITF_NUM_VENDOR, 5, EPNUM_DAP_OUT, 0x80 | EPNUM_DAP_IN,
+#if (SWO_STREAM!=0)
+    0x80 | EPNUM_SWO_IN,
+#endif
+  TUD_OPT_HIGH_SPEED ? 512 : 64)
 };
 
 // Invoked when received GET CONFIGURATION DESCRIPTOR
@@ -130,7 +291,7 @@ uint8_t const desc_configuration[] =
 uint8_t const * tud_descriptor_configuration_cb(uint8_t index)
 {
   (void) index; // for multiple configurations
-  return desc_configuration;
+  return (uint8_t const*)&desc_fs_configuration;
 }
 
 //--------------------------------------------------------------------+
