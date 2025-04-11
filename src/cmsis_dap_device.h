@@ -65,11 +65,6 @@ static inline uint32_t tud_cmsis_dap_swo_clear(void);
 // Invoked when abort request is received
 void tud_cmsis_dap_transfer_abort_cb(uint8_t itf);
 
-// Invoked when SWO control
-uint8_t tud_cmsis_dap_swo_control_cb(uint8_t intf, uint8_t control);
-
-// Invoked when SWO transfer finished
-void tud_cmsis_dap_swo_write_cb(uint8_t intf);
 //--------------------------------------------------------------------+
 // Inline Functions
 //--------------------------------------------------------------------+

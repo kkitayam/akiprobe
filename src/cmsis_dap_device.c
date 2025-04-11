@@ -21,7 +21,6 @@
  * THE SOFTWARE. */
 
 #include "tusb_option.h"
-#include <stdint.h>
 
 #if (CFG_TUD_ENABLED && CFG_TUD_CMSIS_DAP)
 
