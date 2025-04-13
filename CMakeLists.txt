@@ -33,11 +33,11 @@ add_executable(akiprobe
   ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c
   ${CMAKE_CURRENT_SOURCE_DIR}/src/usb_descriptors.c
   ${CMAKE_CURRENT_SOURCE_DIR}/src/cmsis_dap_device.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/cmsis-dap/SWO.c
 
   ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS-DAP/Firmware/Source/DAP.c
   ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS-DAP/Firmware/Source/JTAG_DP.c
   ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS-DAP/Firmware/Source/DAP_vendor.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS-DAP/Firmware/Source/SWO.c
   ${CMAKE_CURRENT_SOURCE_DIR}/lib/CMSIS-DAP/Firmware/Source/SW_DP.c
 )
 

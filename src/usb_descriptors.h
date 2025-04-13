@@ -31,4 +31,19 @@ enum
 
 extern uint8_t const desc_ms_os_20[];
 
+
+#define TUD_CMSIS_DAP_DESC_LEN  (9+7+7+7)
+
+// Interface number, string index, EP Out & IN address, EP size
+#define TUD_CMSIS_DAP_DESCRIPTOR(_itfnum, _stridx, _epout, _epin, _epswo, _epsize) \
+  /* Interface */\
+  9, TUSB_DESC_INTERFACE, _itfnum, 0, 3, TUSB_CLASS_VENDOR_SPECIFIC, 0x00, 0x00, _stridx,\
+  /* Endpoint Out */\
+  7, TUSB_DESC_ENDPOINT, _epout, TUSB_XFER_BULK, U16_TO_U8S_LE(_epsize), 0,\
+  /* Endpoint In */\
+  7, TUSB_DESC_ENDPOINT, _epin, TUSB_XFER_BULK, U16_TO_U8S_LE(_epsize), 0, \
+  /* Endpoint In (SWO_STREAM)*/\
+  7, TUSB_DESC_ENDPOINT, _epswo, TUSB_XFER_BULK, U16_TO_U8S_LE(_epsize), 0
+
+
 #endif /* USB_DESCRIPTORS_H_ */

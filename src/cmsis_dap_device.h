@@ -38,7 +38,11 @@ uint32_t tud_cmsis_dap_n_acquire_request_buffer(uint8_t itf, const uint8_t **pbu
 void     tud_cmsis_dap_n_release_request_buffer(uint8_t itf);
 uint32_t tud_cmsis_dap_n_acquire_response_buffer(uint8_t itf, uint8_t **pbuf);
 void     tud_cmsis_dap_n_release_response_buffer(uint8_t itf, uint32_t bufsize);
-bool     tud_cmsis_dap_n_swo_write(uint8_t itf, void const *data, uint16_t len);
+uint32_t tud_cmsis_dap_n_swo_enqueue(uint8_t itf, void const *data, uint32_t len);
+uint32_t tud_cmsis_dap_n_swo_dequeue(uint8_t itf, void* buffer, uint32_t bufsize);
+uint32_t tud_cmsis_dap_n_swo_free(uint8_t itf);
+uint32_t tud_cmsis_dap_n_swo_used(uint8_t itf);
+uint32_t tud_cmsis_dap_n_swo_clear(uint8_t itf);
 
 //--------------------------------------------------------------------+
 // Application API (Single Port)
@@ -48,7 +52,11 @@ static inline uint32_t tud_cmsis_dap_acquire_request_buffer(const uint8_t **pbuf
 static inline void     tud_cmsis_dap_release_request_buffer(void);
 static inline uint32_t tud_cmsis_dap_acquire_response_buffer(uint8_t **pbuf);
 static inline void     tud_cmsis_dap_release_response_buffer(uint32_t bufsize);
-static inline bool     tud_cmsis_dap_swo_write(void const *data, uint16_t len);
+static inline bool     tud_cmsis_dap_swo_enqueue(void const *data, uint16_t len);
+static inline uint32_t tud_cmsis_dap_swo_dequeue(void* buffer, uint32_t bufsize);
+static inline uint32_t tud_cmsis_dap_swo_free(void);
+static inline uint32_t tud_cmsis_dap_swo_used(void);
+static inline uint32_t tud_cmsis_dap_swo_clear(void);
 
 //--------------------------------------------------------------------+
 // Application Callback API (weak is optional)
@@ -57,8 +65,6 @@ static inline bool     tud_cmsis_dap_swo_write(void const *data, uint16_t len);
 // Invoked when abort request is received
 void tud_cmsis_dap_transfer_abort_cb(uint8_t itf);
 
-// Invoked when SWO transfer finished
-void tud_cmsis_dap_swo_write_cb(uint8_t intf);
 //--------------------------------------------------------------------+
 // Inline Functions
 //--------------------------------------------------------------------+
@@ -88,9 +94,28 @@ static inline void tud_cmsis_dap_release_response_buffer(uint32_t bufsize)
   tud_cmsis_dap_n_release_response_buffer(0, bufsize);
 }
 
-static inline bool tud_cmsis_dap_swo_write(void const *data, uint16_t len)
+static inline bool tud_cmsis_dap_swo_enqueue(void const *data, uint16_t len)
 {
-  return tud_cmsis_dap_n_swo_write(0, data, len);
+  return tud_cmsis_dap_n_swo_enqueue(0, data, len);
+}
+
+static inline uint32_t tud_cmsis_dap_swo_dequeue(void* buffer, uint32_t bufsize)
+{
+  return tud_cmsis_dap_n_swo_dequeue(0, buffer, bufsize);
+}
+
+static inline uint32_t tud_cmsis_dap_swo_free(void)
+{
+  return tud_cmsis_dap_n_swo_free(0);
+}
+
+static inline uint32_t tud_cmsis_dap_swo_used(void)
+{
+  return tud_cmsis_dap_n_swo_used(0);
+}
+static inline uint32_t tud_cmsis_dap_swo_clear(void)
+{
+  return tud_cmsis_dap_n_swo_clear(0);
 }
 
 //--------------------------------------------------------------------+

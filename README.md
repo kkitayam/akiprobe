@@ -70,14 +70,16 @@ $ cmake --build build_pico
 | SWCLK/TCK    |  4  | GP2    |
 | SWDIO/TMS    |  5  | GP3    |
 | TDI          |  1  | GP0    |
-| TDO          |  2  | GP1    |
+| TDO/SWO      |  2  | GP1    |
 | nRESET       |  9  | GP6    |
-| UART TX      | 11  | GP8    |
-| UART RX      | 12  | GP9    |
+| UART TX      |  6  | GP4    |
+| UART RX      |  7  | GP5    |
 
-# License
+# Licensing
 
-- Project's source code files are licensed under MIT license.
+- The majority of this project is licensed under the **MIT License**.
+- The following file is licensed under the **Apache License 2.0**:
+  - `src/cmsis-dap/SWO.c`
 - [TinyUSB](https://github.com/hathach/tinyusb) is licensed under the MIT license.
 - [CMSIS_6](https://github.com/ARM-software/CMSIS_6) is licensed under the Apache 2.0 license.
 - [CMSIS-DAP](https://github.com/ARM-software/CMSIS-DAP) is licensed under the Apache 2.0 license.

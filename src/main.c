@@ -38,7 +38,9 @@
 //#define DEBUG
 #define URL  "studio.keil.arm.com/auth/login/"
 
-bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const * request);
+uint32_t SWO_GetTraceMode(void);
+uint8_t GetTraceStatus(void);
+bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage,  const tusb_control_request_t * request);
 
 const tusb_desc_webusb_url_t desc_url =
 {
@@ -114,7 +116,6 @@ void tud_resume_cb(void)
 //--------------------------------------------------------------------+
 // CMSIS DAP v2 use vendor class
 //--------------------------------------------------------------------+
-
 // Invoked when a control transfer occurred on an interface of this class
 // Driver response accordingly to the request and the transfer stage (setup/data/ack)
 // return false to stall control endpoint (e.g unsupported request)
@@ -153,6 +154,7 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_requ
 
 void tud_cmsis_dap_transfer_abort_cb(uint8_t itf)
 {
+  (void)itf;
   DAP_TransferAbort = 1;
 }
 
@@ -174,22 +176,81 @@ void dap_task(void)
   const uint8_t *p_req;
   uint8_t *p_rsp;
   unsigned sz_req = tud_cmsis_dap_acquire_request_buffer(&p_req);
-  if (!sz_req) return;
-  unsigned sz_rsp = tud_cmsis_dap_acquire_response_buffer(&p_rsp);
-  TU_ASSERT(sz_rsp,);
+  if (sz_req) {
+    unsigned sz_rsp = tud_cmsis_dap_acquire_response_buffer(&p_rsp);
+    TU_ASSERT(sz_rsp,);
 
-  uint32_t result = DAP_ExecuteCommand(p_req, p_rsp);
+    uint32_t result = DAP_ExecuteCommand(p_req, p_rsp);
 #ifdef DEBUG
-  cdc_printf("%x %x -> %lx %x\n", p_req[0], sz_req, result, p_rsp[1]);
+    cdc_printf("%x %x -> %lx %x\n", p_req[0], sz_req, result, p_rsp[1]);
 #endif
 
-  tud_cmsis_dap_release_request_buffer();
-  tud_cmsis_dap_release_response_buffer(result & 0xFFFFU);
+    tud_cmsis_dap_release_request_buffer();
+    tud_cmsis_dap_release_response_buffer(result & 0xFFFFU);
 
 #ifdef DEBUG
-  tud_cdc_write_flush();
+    tud_cdc_write_flush();
+#endif
+  }
+
+#if ((SWO_UART != 0) || (SWO_MANCHESTER != 0))
+  if (GetTraceStatus() & DAP_SWO_CAPTURE_ACTIVE) {
+    unsigned reminder = tud_cmsis_dap_swo_free();
+    if (reminder) {
+      unsigned len = 0;
+      uint8_t buf[64];
+      if (DAP_SWO_UART == SWO_GetTraceMode()) {
+        len = board_swo_read(buf, sizeof(buf));
+      }
+      if (len) tud_cmsis_dap_swo_enqueue(buf, len);
+    }
+  }
 #endif
 }
+
+#if (SWO_UART != 0)
+uint32_t SWO_Mode_UART(uint32_t enable)
+{
+  int ret = board_swo_set_enabled(enable);
+  return ret;
+}
+
+//   return:   actual baudrate or 0 when not configured
+uint32_t SWO_Baudrate_UART(uint32_t baudrate)
+{
+  if (baudrate > SWO_UART_MAX_BAUDRATE) {
+    baudrate = SWO_UART_MAX_BAUDRATE;
+  }
+  return board_swo_set_baudrate(baudrate);
+}
+
+uint32_t SWO_Control_UART(uint32_t active)
+{
+  return 1;
+}
+#endif
+
+#if ((SWO_UART != 0) || (SWO_MANCHESTER != 0))
+uint32_t TraceBuffer_IsUpdated(void)
+{
+  return 0;
+}
+
+uint32_t TraceBuffer_GetCount(void)
+{
+  return tud_cmsis_dap_swo_used();
+}
+
+void TraceBuffer_Clear(void)
+{
+  tud_cmsis_dap_swo_clear();
+}
+
+void TraceBuffer_Drain(uint8_t *data, uint32_t num)
+{
+   tud_cmsis_dap_swo_dequeue(data, num);
+}
+#endif
 
 //--------------------------------------------------------------------+
 // USB CDC
@@ -239,6 +300,7 @@ void cdc_task(void)
 
 void tud_cdc_line_coding_cb(uint8_t itf, cdc_line_coding_t const* line_coding)
 {
+  (void)itf;
   board_uart_set_baudrate(line_coding->bit_rate);
 }
 
