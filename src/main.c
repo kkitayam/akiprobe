@@ -212,6 +212,7 @@ void dap_task(void)
 uint32_t SWO_Mode_UART(uint32_t enable)
 {
   int ret = board_swo_set_enabled(enable);
+  return ret;
 }
 
 //   return:   actual baudrate or 0 when not configured
